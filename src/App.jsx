@@ -213,7 +213,7 @@ export default function BakeryApp() {
   const carrosselContainerClass = "flex lg:grid lg:grid-cols-5 overflow-x-auto lg:overflow-visible gap-x-8 gap-y-20 pb-10 pt-10 -mx-6 px-6 snap-x snap-mandatory scroll-smooth no-scrollbar";
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-[#bc232d] font-sans overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#bc232d] font-sans overflow-hidden">
       <style>{scrollbarHideStyle}</style>
       
       <Toast 
@@ -222,7 +222,8 @@ export default function BakeryApp() {
         onClose={() => setToast({ ...toast, show: false })} 
       />
 
-      <aside className="w-full lg:w-24 h-20 lg:h-full bg-[#bc232d] flex lg:flex-col items-center py-4 lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-white/10 px-6 lg:px-0 z-50">
+      {/* Menu Lateral/Inferior Ajustado */}
+      <aside className="w-full lg:w-24 h-auto lg:h-full bg-[#bc232d] flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-white/10 px-6 lg:px-0 z-50">
         <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
           <div className="hidden lg:flex bg-white p-3 rounded-full text-[#bc232d] shadow-lg cursor-pointer transition-transform hover:scale-110" onClick={() => setSelectedItem(null)}>
             <UtensilsCrossed size={32} />
@@ -242,8 +243,8 @@ export default function BakeryApp() {
         {!selectedItem ? (
           <>
             <header className="flex flex-col lg:flex-row justify-between lg:items-center mb-10 gap-6">
-              <div className="relative w-full lg:w-7/12 h-12 shadow-lg rounded-full overflow-hidden border-0">
-                <div className="absolute inset-0 border-0" style={{ background: 'linear-gradient(to right, #e44444 0%, #e44444 55%, #f4a28c 100%)' }}></div>
+              <div className="relative w-full lg:w-7/12 h-12  rounded-full overflow-hidden border-0">
+                <div className="absolute inset-0 border-0" style={{ background: 'linear-gradient(to right, #e44444 0%, #e44444 45%, #f4a28c 100%)' }}></div>
                 <input 
                   type="text" 
                   placeholder="Pesquisar no cardápio..." 
@@ -259,8 +260,8 @@ export default function BakeryApp() {
               </div>
             </header>
 
-            <section className="bg-[#e44444] rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 shadow-2xl">
-                <div className="hidden lg:block absolute -left-10 -top-12">
+            <section className="bg-[#e44444] rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 ">
+                <div className="hidden lg:block absolute -left-10 -top-8">
                   <img src="https://static.vecteezy.com/system/resources/thumbnails/047/814/133/small_2x/a-slice-of-strawberry-cake-with-strawberries-on-top-the-cake-is-cut-in-half-and-has-a-strawberry-on-each-half-isolated-on-a-transparent-background-png.png" alt="Bolo" className="w-72 h-60 object-contain drop-shadow-2xl" />
                 </div>
                 <div className="lg:ml-64 text-white text-center lg:text-left w-full">
@@ -268,44 +269,6 @@ export default function BakeryApp() {
                   <p className="text-xs lg:text-sm font-medium opacity-80 uppercase tracking-widest">Bolos artesanais para momentos inesquecíveis.</p>
                 </div>
             </section>
-
-            <section className="mb-10 lg:mb-20 mt-8">
-              <h2 className="text-[#bc232d] text-3xl font-black mb-12 uppercase tracking-tighter text-center lg:text-left">
-                {searchTerm ? "Resultados da Busca" : "Popular esta semana"}
-              </h2>
-              <div className={carrosselContainerClass}>
-                {topRatedItems.map((item, index) => (
-                  <ProductCard 
-                    key={`pop-${item.id}`} 
-                    item={item} 
-                    onSelect={setSelectedItem} 
-                    onFavorite={toggleFavorite}
-                    isFavorite={userFavorites.some(f => f.productId === item.id)}
-                    bgColor={index % 2 === 0 ? '#E54C4D' : '#C51D28'}
-                  />
-                ))}
-              </div>
-            </section>
-
-            {!searchTerm && (
-              <section className="mb-10 lg:mb-20">
-                <h2 className="text-[#bc232d] text-3xl font-black mb-12 uppercase tracking-tighter text-center lg:text-left">
-                  Novos Lançamentos
-                </h2>
-                <div className={carrosselContainerClass}>
-                  {newestItems.map((item, index) => (
-                    <ProductCard 
-                      key={`new-${item.id}`} 
-                      item={item} 
-                      onSelect={setSelectedItem} 
-                      onFavorite={toggleFavorite}
-                      isFavorite={userFavorites.some(f => f.productId === item.id)}
-                      bgColor={index % 2 !== 0 ? '#E54C4D' : '#C51D28'}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
 
             <section className="mb-20">
               <h2 className="text-[#bc232d] text-3xl font-black mb-6 uppercase tracking-tighter text-center lg:text-left">

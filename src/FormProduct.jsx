@@ -7,16 +7,24 @@ import { useNavigate } from 'react-router-dom';
 export default function FormProduto() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  
   const [produto, setProduto] = useState({
     name: '',
     price: '',
     rating: '',
     image: '',
-    description: ''
+    description: '',
+    category: '' 
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!produto.category) {
+      alert("Por favor, selecione uma categoria.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -47,37 +55,62 @@ export default function FormProduto() {
       </button>
 
       <div className="bg-white/30 backdrop-blur-md p-10 rounded-[3rem] shadow-2xl w-full max-w-2xl border border-white/20">
-        <h2 className="text-4xl font-black text-[#bc232d] mb-8 uppercase tracking-tighter">Cadastrar Novo Bolo</h2>
+        <h2 className="text-4xl font-black text-[#bc232d] mb-8 uppercase tracking-tighter">Cadastrar Novo Produto</h2>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {/* Nome do Produto */}
           <input 
             type="text" placeholder="Nome do Produto" required
             className="bg-white/50 border-none rounded-2xl p-4 text-[#bc232d] placeholder-[#bc232d]/50 outline-none focus:ring-2 focus:ring-[#bc232d]"
+            value={produto.name}
             onChange={(e) => setProduto({...produto, name: e.target.value})}
           />
           
+          {/* Categoria do Produto */}
+          <select 
+            required
+            className="bg-white/50 border-none rounded-2xl p-4 text-[#bc232d] outline-none focus:ring-2 focus:ring-[#bc232d] appearance-none cursor-pointer"
+            value={produto.category}
+            onChange={(e) => setProduto({...produto, category: e.target.value})}
+          >
+            <option value="" disabled>Selecione uma Categoria</option>
+            <option value="Bolos">Bolos</option>
+            <option value="Doces">Doces</option>
+            <option value="Pães">Pães</option>
+            <option value="Salgados">Salgados</option>
+            <option value="Bebidas">Bebidas</option>
+          </select>
+          
           <div className="flex gap-4">
+            {/* Preço */}
             <input 
               type="number" step="0.01" placeholder="Preço (R$)" required
               className="flex-1 bg-white/50 border-none rounded-2xl p-4 text-[#bc232d] outline-none focus:ring-2 focus:ring-[#bc232d]"
+              value={produto.price}
               onChange={(e) => setProduto({...produto, price: e.target.value})}
             />
+            {/* Avaliação */}
             <input 
               type="number" step="0.1" max="5" placeholder="Avaliação (0-5)" required
               className="flex-1 bg-white/50 border-none rounded-2xl p-4 text-[#bc232d] outline-none focus:ring-2 focus:ring-[#bc232d]"
+              value={produto.rating}
               onChange={(e) => setProduto({...produto, rating: e.target.value})}
             />
           </div>
 
+          {/* URL da Imagem */}
           <input 
             type="text" placeholder="URL da Imagem" required
             className="bg-white/50 border-none rounded-2xl p-4 text-[#bc232d] outline-none focus:ring-2 focus:ring-[#bc232d]"
+            value={produto.image}
             onChange={(e) => setProduto({...produto, image: e.target.value})}
           />
 
+          {/* Descrição */}
           <textarea 
             placeholder="Descrição do Produto" rows="4" required
             className="bg-white/50 border-none rounded-2xl p-4 text-[#bc232d] outline-none focus:ring-2 focus:ring-[#bc232d] resize-none"
+            value={produto.description}
             onChange={(e) => setProduto({...produto, description: e.target.value})}
           ></textarea>
 

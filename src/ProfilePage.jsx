@@ -68,10 +68,10 @@ export default function ProfilePage() {
   const inputStyle = "w-full bg-white/20 border border-white/30 rounded-xl p-2 text-[#bc232d] font-bold outline-none focus:bg-white/40 transition-all";
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-[#bc232d] font-sans overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#bc232d] font-sans overflow-hidden">
       
-      {/* SIDEBAR */}
-      <aside className="w-full lg:w-24 h-20 lg:h-full bg-[#bc232d] flex lg:flex-col items-center py-4 lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-white/10 px-6 lg:px-0 z-50">
+      {/* SIDEBAR / MENU INFERIOR */}
+      <aside className="w-full lg:w-24 h-auto lg:h-full bg-[#bc232d] flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-white/10 px-6 lg:px-0 z-50">
         <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
           <div className="hidden lg:flex bg-white p-3 rounded-full text-[#bc232d] shadow-lg cursor-pointer" onClick={() => navigate('/')}>
             <UtensilsCrossed size={32} />
@@ -88,19 +88,14 @@ export default function ProfilePage() {
       </aside>
 
       {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 bg-[#f4a28c] lg:rounded-l-[5rem] overflow-y-auto order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12">
+      <main className="flex-1 bg-[#f4a28c] lg:rounded-l-[5rem] overflow-y-auto order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12 no-scrollbar">
         <div className="max-w-4xl mx-auto py-4">
-          
           <div className="flex justify-between items-center mb-10">
             <button onClick={() => navigate('/')} className="flex items-center gap-2 text-[#bc232d] font-black uppercase tracking-widest text-sm">
               <ArrowLeft size={24} /> Voltar
             </button>
-
             {!isEditing ? (
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 bg-[#bc232d] text-white px-6 py-3 rounded-2xl font-black shadow-lg hover:scale-105 transition-all"
-              >
+              <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 bg-[#bc232d] text-white px-6 py-3 rounded-2xl font-black shadow-lg hover:scale-105 transition-all">
                 <Pencil size={18} /> EDITAR PERFIL
               </button>
             ) : (
@@ -118,66 +113,38 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-8">
-              
-              {/* CABEÇALHO */}
               <section className="bg-white/40 backdrop-blur-xl rounded-[3rem] p-8 lg:p-12 shadow-2xl border border-white/30 flex flex-col items-center text-center">
                 <div className="bg-[#bc232d] p-8 rounded-full text-white shadow-2xl mb-6 relative">
                   <User size={70} />
                 </div>
                 {isEditing ? (
-                  <input 
-                    type="text" 
-                    className={`${inputStyle} text-center text-2xl lg:text-3xl uppercase`}
-                    value={editedData.name}
-                    onChange={(e) => handleChange(e, 'name')}
-                  />
+                  <input type="text" className={`${inputStyle} text-center text-2xl lg:text-3xl uppercase`} value={editedData.name} onChange={(e) => handleChange(e, 'name')} />
                 ) : (
-                  <h1 className="text-4xl lg:text-5xl font-black text-[#bc232d] uppercase tracking-tighter mb-2">
-                    {data?.name || 'Cliente Especial'}
-                  </h1>
+                  <h1 className="text-4xl lg:text-5xl font-black text-[#bc232d] uppercase tracking-tighter mb-2">{data?.name || 'Cliente Especial'}</h1>
                 )}
                 <p className="text-[#bc232d] font-bold text-sm lowercase mt-2 opacity-60">{user?.email}</p>
               </section>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* DADOS PESSOAIS */}
                 <div className="bg-white/40 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 shadow-xl">
-                  <h3 className="text-[#bc232d] font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2">
-                    <Info size={16} /> Dados Pessoais
-                  </h3>
+                  <h3 className="text-[#bc232d] font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2"><Info size={16} /> Dados Pessoais</h3>
                   <div>
                     <label className="text-[10px] font-black text-[#bc232d]/40 uppercase block mb-1">Aniversário</label>
                     {isEditing ? (
-                      <input 
-                        type="date" 
-                        className={inputStyle}
-                        value={editedData.birthday}
-                        onChange={(e) => handleChange(e, 'birthday')}
-                      />
+                      <input type="date" className={inputStyle} value={editedData.birthday} onChange={(e) => handleChange(e, 'birthday')} />
                     ) : (
-                      <div className="flex items-center gap-3 text-[#bc232d] font-bold text-lg">
-                        <Calendar size={20} /> {data?.birthday || '---'}
-                      </div>
+                      <div className="flex items-center gap-3 text-[#bc232d] font-bold text-lg"><Calendar size={20} /> {data?.birthday || '---'}</div>
                     )}
                   </div>
                 </div>
 
-                {/* CIDADE/ESTADO */}
                 <div className="bg-white/40 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 shadow-xl">
-                  <h3 className="text-[#bc232d] font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2">
-                    <MapPinned size={16} /> Localização
-                  </h3>
+                  <h3 className="text-[#bc232d] font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2"><MapPinned size={16} /> Localização</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-[#bc232d]/40 uppercase block mb-1">Cidade</label>
                       {isEditing ? (
-                        <input 
-                          type="text" 
-                          className={inputStyle}
-                          value={editedData.address.city}
-                          onChange={(e) => handleChange(e, 'address', 'city')}
-                        />
+                        <input type="text" className={inputStyle} value={editedData.address.city} onChange={(e) => handleChange(e, 'address', 'city')} />
                       ) : (
                         <p className="font-black text-[#bc232d] uppercase">{data?.address?.city || '---'}</p>
                       )}
@@ -185,13 +152,7 @@ export default function ProfilePage() {
                     <div>
                       <label className="text-[10px] font-black text-[#bc232d]/40 uppercase block mb-1">Estado</label>
                       {isEditing ? (
-                        <input 
-                          type="text" 
-                          maxLength="2"
-                          className={inputStyle}
-                          value={editedData.address.state}
-                          onChange={(e) => handleChange(e, 'address', 'state')}
-                        />
+                        <input type="text" maxLength="2" className={inputStyle} value={editedData.address.state} onChange={(e) => handleChange(e, 'address', 'state')} />
                       ) : (
                         <p className="font-black text-[#bc232d] uppercase">{data?.address?.state || '---'}</p>
                       )}
@@ -199,7 +160,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* ENDEREÇO DETALHADO */}
                 <div className="bg-white/40 backdrop-blur-md p-8 rounded-[3rem] border border-white/20 shadow-xl md:col-span-2">
                   <h3 className="text-[#bc232d] font-black uppercase text-xs tracking-[0.2em] mb-6">Endereço de Entrega</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -242,12 +202,8 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-
               {!isEditing && (
-                <button 
-                  onClick={handleSignOut} 
-                  className="w-full mt-4 bg-[#bc232d] text-white font-black py-6 rounded-[2.5rem] flex items-center justify-center gap-4 shadow-2xl hover:bg-[#a01d25] transition-all"
-                >
+                <button onClick={handleSignOut} className="w-full mt-4 bg-[#bc232d] text-white font-black py-6 rounded-[2.5rem] flex items-center justify-center gap-4 shadow-2xl hover:bg-[#a01d25] transition-all">
                   <LogOut size={24} /> Encerrar Sessão
                 </button>
               )}

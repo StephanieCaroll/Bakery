@@ -5,7 +5,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Calendar, LogOut, 
-  UtensilsCrossed, MapPinned, Info, Pencil, Check, X, LogIn
+  UtensilsCrossed, MapPinned, Info, Pencil, Check, X, LogIn, Phone
 } from 'lucide-react';
 import Sidebar from '../components/SideBar';
 
@@ -107,13 +107,17 @@ export default function ProfilePage() {
   };
 
   const handleChange = (e, field, subfield = null) => {
+    const value = e.target.value;
+    
+    const finalValue = field === 'phone' ? value.replace(/\D/g, "") : value;
+
     if (subfield) {
       setEditedData({
         ...editedData,
-        [field]: { ...editedData[field], [subfield]: e.target.value }
+        [field]: { ...editedData[field], [subfield]: finalValue }
       });
     } else {
-      setEditedData({ ...editedData, [field]: e.target.value });
+      setEditedData({ ...editedData, [field]: finalValue });
     }
   };
 
@@ -127,7 +131,7 @@ export default function ProfilePage() {
 
   return (
     <div className={`flex flex-col lg:flex-row h-[100dvh] font-sans overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'}`}>
-     
+      
       <style>{scrollbarHideStyle}</style>
 
       <Toast 
@@ -145,40 +149,39 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto py-4">
           
           {!user ? (
-           <div className="flex flex-col items-center justify-center h-[calc(100dvh-12rem)] text-center animate-in fade-in zoom-in-95 duration-500">
-    <div className={`p-10 lg:p-16 rounded-[4rem] shadow-2xl border backdrop-blur-md w-full max-w-lg transition-all ${
-      darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/30'
-    }`}>
-      {/* Ícone para dar um peso visual no centro */}
-      <div className={`w-20 h-20 mx-auto mb-8 rounded-full flex items-center justify-center ${
-        darkMode ? 'bg-white/10 text-white' : 'bg-[#bc232d]/10 text-[#bc232d]'
-      }`}>
-        <User size={40} />
-      </div>
+            <div className="flex flex-col items-center justify-center h-[calc(100dvh-12rem)] text-center animate-in fade-in zoom-in-95 duration-500">
+              <div className={`p-10 lg:p-16 rounded-[4rem] shadow-2xl border backdrop-blur-md w-full max-w-lg transition-all ${
+                darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/30'
+              }`}>
+                <div className={`w-20 h-20 mx-auto mb-8 rounded-full flex items-center justify-center ${
+                  darkMode ? 'bg-white/10 text-white' : 'bg-[#bc232d]/10 text-[#bc232d]'
+                }`}>
+                  <User size={40} />
+                </div>
 
-      <h2 className={`text-3xl lg:text-4xl font-black mb-4 uppercase tracking-tighter ${
-        darkMode ? 'text-white' : 'text-[#bc232d]'
-      }`}>
-        Login Necessário
-      </h2>
-      
-      <p className={`mb-10 font-bold opacity-60 uppercase text-xs tracking-widest ${
-        darkMode ? 'text-white' : 'text-[#bc232d]'
-      }`}>
-        Você precisa estar logado para acessar seu perfil.
-      </p>
+                <h2 className={`text-3xl lg:text-4xl font-black mb-4 uppercase tracking-tighter ${
+                  darkMode ? 'text-white' : 'text-[#bc232d]'
+                }`}>
+                  Login Necessário
+                </h2>
+                
+                <p className={`mb-10 font-bold opacity-60 uppercase text-xs tracking-widest ${
+                  darkMode ? 'text-white' : 'text-[#bc232d]'
+                }`}>
+                  Você precisa estar logado para acessar seu perfil.
+                </p>
 
-      <button 
-        onClick={() => navigate('/login')} 
-        className={`w-full flex items-center justify-center gap-3 px-10 py-5 rounded-[2rem] font-black shadow-xl hover:scale-[1.03] active:scale-95 transition-all uppercase tracking-widest ${
-          darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'
-        }`}
-      >
-        <LogIn size={22} /> Fazer Login
-      </button>
-    </div>
-  </div>
-) : (
+                <button 
+                  onClick={() => navigate('/login')} 
+                  className={`w-full flex items-center justify-center gap-3 px-10 py-5 rounded-[2rem] font-black shadow-xl hover:scale-[1.03] active:scale-95 transition-all uppercase tracking-widest ${
+                    darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'
+                  }`}
+                >
+                  <LogIn size={22} /> Fazer Login
+                </button>
+              </div>
+            </div>
+          ) : (
             <>
               <div className="flex flex-col items-center mb-10 relative">
                 {!isEditing ? (
@@ -213,22 +216,44 @@ export default function ProfilePage() {
                 </section>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* DADOS PESSOAIS */}
                   <div className={`${darkMode ? 'bg-white/5 border-white/5' : 'bg-white/40 border-white/20'} backdrop-blur-md p-8 rounded-[3rem] border shadow-xl transition-colors`}>
                     <h3 className={`font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2 ${darkMode ? 'text-white/40' : 'text-[#bc232d]'}`}>
                       <Info size={16} /> Dados Pessoais
                     </h3>
-                    <div>
-                      <label className={`text-[10px] font-black uppercase block mb-1 opacity-40 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>Aniversário</label>
-                      {isEditing ? (
-                        <input type="date" className={inputStyle} value={editedData.birthday} onChange={(e) => handleChange(e, 'birthday')} />
-                      ) : (
-                        <div className={`flex items-center gap-3 font-bold text-lg ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
-                          <Calendar size={20} /> {data?.birthday || '---'}
-                        </div>
-                      )}
+                    <div className="space-y-6">
+                      <div>
+                        <label className={`text-[10px] font-black uppercase block mb-1 opacity-40 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>Aniversário</label>
+                        {isEditing ? (
+                          <input type="date" className={inputStyle} value={editedData.birthday} onChange={(e) => handleChange(e, 'birthday')} />
+                        ) : (
+                          <div className={`flex items-center gap-3 font-bold text-lg ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
+                            <Calendar size={20} /> {data?.birthday || '---'}
+                          </div>
+                        )}
+                      </div>
+
+                      {/*TELEFONE */}
+                      <div>
+                        <label className={`text-[10px] font-black uppercase block mb-1 opacity-40 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>WhatsApp / Telefone</label>
+                        {isEditing ? (
+                          <input 
+                            type="tel" 
+                            className={inputStyle} 
+                            placeholder="Ex: 81988887777"
+                            value={editedData.phone || ''} 
+                            onChange={(e) => handleChange(e, 'phone')} 
+                          />
+                        ) : (
+                          <div className={`flex items-center gap-3 font-bold text-lg ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
+                            <Phone size={20} /> {data?.phone || '---'}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
+                  {/* LOCALIZAÇÃO */}
                   <div className={`${darkMode ? 'bg-white/5 border-white/5' : 'bg-white/40 border-white/20'} backdrop-blur-md p-8 rounded-[3rem] border shadow-xl transition-colors`}>
                     <h3 className={`font-black uppercase text-xs tracking-[0.2em] mb-6 flex items-center gap-2 ${darkMode ? 'text-white/40' : 'text-[#bc232d]'}`}>
                       <MapPinned size={16} /> Localização
@@ -253,6 +278,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
+                  {/* ENDEREÇO COMPLETO */}
                   <div className={`${darkMode ? 'bg-white/5 border-white/5' : 'bg-white/40 border-white/20'} backdrop-blur-md p-8 rounded-[3rem] border shadow-xl md:col-span-2 transition-colors`}>
                     <h3 className={`font-black uppercase text-xs tracking-[0.2em] mb-6 ${darkMode ? 'text-white/40' : 'text-[#bc232d]'}`}>Endereço de Entrega</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

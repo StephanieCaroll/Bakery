@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { db } from "../services/firebase";
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from "../context/AuthContext";
-import { ShoppingBag, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { 
+  ShoppingBag, DollarSign, Calendar, Trash2, 
+  CheckCircle2, Truck, Utensils
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from "../components/SideBar";
 
@@ -17,6 +20,7 @@ export default function OrdersManager() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ daily: 0, monthly: 0 });
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -36,17 +40,41 @@ export default function OrdersManager() {
     const anoAtual = new Date().getFullYear();
     let dia = 0, mes = 0;
     lista.forEach(order => {
-      if (!order.timestamp) return;
+      if (!order.timestamp || !order.total) return;
       const dataPedido = order.timestamp.toDate();
-      if (dataPedido.toLocaleDateString('pt-BR') === hoje) dia += Number(order.total);
-      if (dataPedido.getMonth() === mesAtual && dataPedido.getFullYear() === anoAtual) mes += Number(order.total);
+      const valor = parseFloat(order.total) || 0;
+      if (dataPedido.toLocaleDateString('pt-BR') === hoje) dia += valor;
+      if (dataPedido.getMonth() === mesAtual && dataPedido.getFullYear() === anoAtual) mes += valor;
     });
     setStats({ daily: dia, monthly: mes });
   };
 
-  const updateStatus = async (orderId, newStatus) => {
-    try { await updateDoc(doc(db, "orders", orderId), { status: newStatus }); } 
-    catch (error) { console.error(error); }
+  // --- FUNÇÃO DE MUDANÇA DE STATUS + WHATSAPP ---
+  const handleStatusChange = (order, newStatus) => {
+    // 1. GERA A MENSAGEM
+    const phone = order.phone?.replace(/\D/g, "");
+    if (phone) {
+      let message = "";
+      if (newStatus === "Preparando") {
+        message = `Oi ${order.customerName}! 🧁 Passando para avisar que já estamos preparando o seu pedido com muito carinho aqui na Bakery! 👨‍🍳`;
+      } else if (newStatus === "Saiu para Entrega") {
+        message = `Boas notícias, ${order.customerName}! 🚚💨 Seu pedido acabou de sair para entrega e logo chegará até você!`;
+      } else if (newStatus === "Concluído") {
+        message = `Pedido entregue! ✨\n\nMuito obrigado pela preferência, ${order.customerName}! Esperamos que ame cada pedaço. 🍰\n\nSe puder, nos marque no Instagram @stephaniecarolinedev! ❤️`;
+      }
+
+      // 2. ABRE O WHATSAPP IMEDIATAMENTE (SÍNCRONO)
+      // Isso impede que o navegador bloqueie a janela
+      const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank', 'noreferrer');
+    }
+
+    // 3. ATUALIZA O FIREBASE EM SEGUNDO PLANO
+    const orderRef = doc(db, "orders", order.id);
+    updateDoc(orderRef, { 
+      status: newStatus,
+      updatedAt: new Date() 
+    }).catch(err => console.error("Erro no Firebase:", err));
   };
 
   const deletarPedido = async (id) => {
@@ -54,81 +82,106 @@ export default function OrdersManager() {
   };
 
   const statusColors = {
-    "Pendente": "bg-amber-500/20 text-amber-500",
-    "Preparando": "bg-blue-500/20 text-blue-500",
-    "Saiu para Entrega": "bg-purple-500/20 text-purple-500",
-    "Concluído": "bg-green-500/20 text-green-600 border-green-500/50"
+    "Pendente": "bg-amber-500 text-white",
+    "Preparando": "bg-blue-500 text-white",
+    "Saiu para Entrega": "bg-purple-500 text-white",
+    "Concluído": "bg-green-600 text-white"
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-[#bc232d] text-white font-bold">CARREGANDO...</div>;
+  const pedidosFiltrados = filtroStatus === "Todos" ? orders : orders.filter(o => o.status === filtroStatus);
+
+  if (loading) return <div className="h-screen flex items-center justify-center bg-[#bc232d] text-white font-black animate-pulse">CARREGANDO...</div>;
 
   return (
     <div className={`flex flex-col lg:flex-row h-[100dvh] w-full font-sans overflow-hidden transition-colors duration-500 ${
-      darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
+      darkMode ? 'bg-zinc-950 text-white' : 'bg-[#bc232d] text-white'
     }`}>
       <style>{scrollbarHideStyle}</style>
-      
-      <div className="order-2 lg:order-first z-50">
-        <Sidebar />
-      </div>
+      <Sidebar />
 
-      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto shadow-2xl transition-colors duration-500 border-none outline-none scrollbar-hide order-1 lg:order-2 ${
-        darkMode ? 'bg-zinc-900' : 'bg-[#f4a28c]'
+      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto shadow-2xl transition-colors duration-500 scrollbar-hide order-1 lg:order-2 ${
+        darkMode ? 'bg-zinc-900 text-white' : 'bg-[#f4a28c] text-[#bc232d]'
       }`}>
         
-        <div className="max-w-6xl mx-auto flex flex-col py-4">
-          <header className="mb-10 text-center lg:text-left">
-             <h2 className={`text-4xl lg:text-6xl font-black uppercase tracking-tighter ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
-                Gestão de Pedidos
+        <div className="max-w-6xl mx-auto py-4 text-inherit">
+          <header className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+             <h2 className="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.8]">
+               Gestão de<br/>Pedidos
              </h2>
+
+             {/* FILTRO NO TOPO */}
+             <div className="flex flex-wrap gap-2 p-2 rounded-3xl bg-black/5 backdrop-blur-sm">
+                {["Todos", "Pendente", "Preparando", "Saiu para Entrega", "Concluído"].map(s => (
+                  <button key={s} onClick={() => setFiltroStatus(s)}
+                    className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      filtroStatus === s ? (darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white') : 'opacity-50 hover:opacity-100'
+                    }`}>
+                    {s}
+                  </button>
+                ))}
+             </div>
           </header>
 
-          {/* Cards de Faturamento */}
+          {/* CARDS DE FATURAMENTO */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div className={`${darkMode ? 'bg-white/5' : 'bg-white/40'} p-8 rounded-[3rem] border border-white/20 backdrop-blur-md shadow-xl flex items-center gap-6`}>
-              <DollarSign size={32} className="text-green-500" />
+            <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20'} p-8 rounded-[3rem] border shadow-xl flex items-center gap-6`}>
+              <div className="bg-green-500 p-4 rounded-3xl text-white shadow-lg"><DollarSign size={32} /></div>
               <div>
-                <p className="text-[10px] font-black uppercase opacity-50">Hoje</p>
-                <p className="text-3xl font-black">R$ {stats.daily.toFixed(2)}</p>
+                <p className="text-[10px] font-black uppercase opacity-50 tracking-widest">Faturamento Hoje</p>
+                <p className="text-4xl font-black italic tracking-tighter">R$ {stats.daily.toFixed(2)}</p>
               </div>
             </div>
 
-            <div className={`${darkMode ? 'bg-white/5' : 'bg-white/40'} p-8 rounded-[3rem] border border-white/20 backdrop-blur-md shadow-xl flex items-center gap-6`}>
-              <Calendar size={32} className="text-blue-500" />
+            <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20'} p-8 rounded-[3rem] border shadow-xl flex items-center gap-6`}>
+              <div className="bg-blue-500 p-4 rounded-3xl text-white shadow-lg"><Calendar size={32} /></div>
               <div>
-                <p className="text-[10px] font-black uppercase opacity-50">Mês</p>
-                <p className="text-3xl font-black">R$ {stats.monthly.toFixed(2)}</p>
+                <p className="text-[10px] font-black uppercase opacity-50 tracking-widest">Faturamento Mês</p>
+                <p className="text-4xl font-black italic tracking-tighter">R$ {stats.monthly.toFixed(2)}</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-6 pb-24">
-            {orders.map(order => (
-              <div key={order.id} className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'} p-8 rounded-[3rem] border shadow-2xl`}>
-                <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
-                  <div className="flex items-center gap-5">
-                    <ShoppingBag className={darkMode ? 'text-white' : 'text-[#bc232d]'} size={28} />
+          <div className="space-y-8 pb-32">
+            {pedidosFiltrados.map(order => (
+              <div key={order.id} className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/60 border-white/20'} p-8 rounded-[4rem] border shadow-2xl transition-all`}>
+                <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-8">
+                  <div className="flex items-center gap-6">
+                    <div className={`p-5 rounded-[2rem] shadow-lg ${statusColors[order.status] || 'bg-zinc-500'}`}>
+                      <ShoppingBag size={30} />
+                    </div>
                     <div>
-                      <h4 className="text-xl font-black uppercase tracking-tighter">{order.customerName}</h4>
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${statusColors[order.status]}`}>{order.status}</span>
+                      <h4 className="text-2xl font-black uppercase tracking-tighter mb-2">{order.customerName}</h4>
+                      <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${statusColors[order.status]}`}>
+                        {order.status}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {["Pendente", "Preparando", "Saiu para Entrega", "Concluído"].map(s => (
-                      <button key={s} onClick={() => updateStatus(order.id, s)} className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase border ${order.status === s ? 'bg-white text-black' : 'opacity-40'}`}>{s}</button>
-                    ))}
-                    <button onClick={() => deletarPedido(order.id)} className="p-2 text-red-500"><Trash2 size={20} /></button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button onClick={() => handleStatusChange(order, "Preparando")} className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${order.status === "Preparando" ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'opacity-40 border-current hover:opacity-100'}`}><Utensils size={14} /> Preparar</button>
+                    
+                    {/* BOTÃO ENTREGAR - COM NOME "SAIU PARA ENTREGA" E WHATSAPP */}
+                    <button onClick={() => handleStatusChange(order, "Saiu para Entrega")} className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${order.status === "Saiu para Entrega" ? 'bg-purple-500 text-white border-purple-500 shadow-lg' : 'opacity-40 border-current hover:opacity-100'}`}><Truck size={14} /> Saiu para Entrega</button>
+                    
+                    <button onClick={() => handleStatusChange(order, "Concluído")} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${order.status === "Concluído" ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'}`}><CheckCircle2 size={16} /> Concluir</button>
+                    
+                    <button onClick={() => deletarPedido(order.id)} className="p-3 text-red-500 hover:bg-red-500/10 rounded-2xl ml-4"><Trash2 size={22} /></button>
                   </div>
                 </div>
                 
-                <div className="mt-6 pt-6 border-t border-black/5 flex justify-between items-center">
-                    <div className="flex flex-wrap gap-2">
+                <div className={`mt-8 pt-8 border-t flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 ${darkMode ? 'border-white/10' : 'border-black/5'}`}>
+                    <div className="flex flex-wrap gap-3">
                       {order.items?.map((item, idx) => (
-                        <span key={idx} className="bg-black/5 px-3 py-1 rounded-lg text-[10px] font-bold">{item.quantity}x {item.name}</span>
+                        <div key={idx} className={`px-4 py-2 rounded-2xl flex items-center gap-2 ${darkMode ? 'bg-white/10 text-white' : 'bg-black/5 text-[#bc232d]'}`}>
+                           <span className="font-black">{item.quantity}x</span>
+                           <span className="font-bold uppercase text-[11px] tracking-tight">{item.name}</span>
+                        </div>
                       ))}
                     </div>
-                    <p className="text-2xl font-black italic">R$ {Number(order.total).toFixed(2)}</p>
+                    <div className="text-right text-inherit">
+                      <p className="text-[10px] font-black uppercase opacity-40 mb-1">Total do Pedido</p>
+                      <p className="text-4xl font-black italic tracking-tighter">R$ {parseFloat(order.total || 0).toFixed(2)}</p>
+                    </div>
                 </div>
               </div>
             ))}

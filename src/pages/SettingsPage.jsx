@@ -1,15 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Shield, Moon, Home, User, Heart, 
-  ShoppingCart, Settings, UtensilsCrossed, LogOut,
-  Trash2, MessageSquare, HelpCircle, 
-  ExternalLink, ChevronRight, BellRing, MapPin, 
+  Shield, Moon, UtensilsCrossed, LogOut,
+  HelpCircle, ExternalLink, ChevronRight, MapPin, 
   Clock, CreditCard, Receipt, X
 } from 'lucide-react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../context/AuthContext';
+import Sidebar from '../components/SideBar';
 
-// Componente de Modal Personalizado que respeita o Modo Escuro
+const scrollbarHideStyle = `
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none !important;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+`;
+
+const GlobalLoading = ({ darkMode }) => (
+  <div className={`flex flex-col items-center justify-center h-[100dvh] w-full animate-in fade-in duration-500 ${
+    darkMode ? 'bg-zinc-950 text-white' : 'bg-[#bc232d] text-white'
+  }`}>
+    <div className="animate-spin mb-4">
+      <UtensilsCrossed size={40} />
+    </div>
+    <p className="font-black uppercase tracking-widest text-xs">Configurações...</p>
+  </div>
+);
+
 const InfoModal = ({ isOpen, onClose, title, content, darkMode }) => {
   if (!isOpen) return null;
   return (
@@ -39,14 +58,16 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, logout, darkMode, setDarkMode } = useAuth();
 
-  // Estados
-  const [whatsappUpdates, setWhatsappUpdates] = useState(true);
   const [newsletter, setNewsletter] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
-  
-  // Estado para o Modal
+  const [isLoading, setIsLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, title: "", content: "" });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -64,9 +85,13 @@ export default function SettingsPage() {
     </button>
   );
 
+  if (isLoading) return <GlobalLoading darkMode={darkMode} />;
+
   return (
     <div className={`flex flex-col lg:flex-row h-[100dvh] font-sans overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'}`}>
       
+      <style>{scrollbarHideStyle}</style>
+
       <InfoModal 
         isOpen={modal.open} 
         title={modal.title} 
@@ -75,26 +100,9 @@ export default function SettingsPage() {
         onClose={() => setModal({ ...modal, open: false })} 
       />
 
-      {/* SIDEBAR */}
-      <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r px-6 lg:px-0 z-50 transition-colors duration-500 ${
-        darkMode ? 'bg-zinc-900 border-white/5' : 'bg-[#bc232d] border-white/10'
-      }`}>
-        <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
-          <div className={`${darkMode ? 'bg-white text-zinc-900' : 'bg-white text-[#bc232d]'} hidden lg:flex p-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110`} onClick={() => navigate('/')}>
-            <UtensilsCrossed size={32} />
-          </div>
-          <nav className="flex lg:flex-col gap-8 lg:gap-12 text-white/50 w-full justify-around lg:items-center">
-            <Home className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => navigate('/')} />
-            <User className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => navigate('/perfil')} />
-            <Heart className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => navigate('/favoritos')} />
-            <ShoppingCart className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => navigate('/carrinho')} />
-            <Settings className="text-white" size={28} />
-          </nav>
-        </div>
-        {user && <LogOut className="text-white/50 cursor-pointer hover:text-white hidden lg:block" size={28} onClick={handleLogout} />}
-      </aside>
+      <Sidebar onLogoClick={() => navigate('/')} />
 
-      <main className={`flex-1 lg:rounded-l-[5rem] overflow-y-auto order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12 no-scrollbar transition-colors duration-500 ${
+      <main className={`flex-1 lg:rounded-l-[5rem] overflow-y-auto overflow-x-hidden order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12 hide-scrollbar transition-colors duration-500 border-none outline-none ${
         darkMode ? 'bg-zinc-900 text-white' : 'bg-[#f4a28c] text-[#bc232d]'
       }`}>
         <div className="max-w-2xl mx-auto">
@@ -102,7 +110,6 @@ export default function SettingsPage() {
 
           <div className="flex flex-col gap-8 pb-32">
             
-            {/* PREFERÊNCIAS */}
             <section className="space-y-4">
               <h3 className={`${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'} font-black text-xs uppercase tracking-[0.2em] px-4`}>Personalização</h3>
               <div className={`${darkMode ? 'bg-white/5 border-white/5' : 'bg-white/30 border-white/20'} backdrop-blur-md rounded-[2.5rem] border p-2`}>
@@ -123,12 +130,11 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* INFO DA CONFEITARIA */}
             <section className="space-y-4">
               <h3 className={`${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'} font-black text-xs uppercase tracking-[0.2em] px-4`}>Guia da Confeitaria</h3>
               <div className={`${darkMode ? 'bg-white/5 border-white/5' : 'bg-white/30 border-white/20'} backdrop-blur-md rounded-[2.5rem] border p-2`}>
                 <button 
-                  onClick={() => openInfo("Locais de Entrega", "Realizamos entregas em toda a Região Metropolitana do Recife, Olinda e Jaboatão dos Guararapes. Taxa fixa de R$ 10,00 para pedidos acima de R$ 50,00.")} 
+                  onClick={() => openInfo("Locais de Entrega", "Realizamos entregas em toda a Região Metropolitana do Recife, Olinda e Jaboatão dos Guararapes.")} 
                   className="w-full flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/10 transition-all rounded-t-[2rem]"
                 >
                   <div className={`flex items-center gap-4 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
@@ -138,7 +144,7 @@ export default function SettingsPage() {
                   <ChevronRight size={18} className={darkMode ? 'text-white/20' : 'text-[#bc232d]/40'} />
                 </button>
                 <button 
-                  onClick={() => openInfo("Nossos Horários", "Produção artesanal: Segunda a Sexta, das 08h às 18h. Pedidos feitos após as 16h entram na agenda do dia seguinte. Fins de semana apenas eventos agendados.")} 
+                  onClick={() => openInfo("Nossos Horários", "Produção artesanal: Segunda a Sexta, das 08h às 18h.")} 
                   className="w-full flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/10 transition-all"
                 >
                   <div className={`flex items-center gap-4 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
@@ -148,7 +154,7 @@ export default function SettingsPage() {
                   <ChevronRight size={18} className={darkMode ? 'text-white/20' : 'text-[#bc232d]/40'} />
                 </button>
                 <button 
-                  onClick={() => openInfo("Pagamentos", "Aceitamos Pix (com 5% de desconto), Cartões de Crédito (todas as bandeiras) e Débito. Não aceitamos dinheiro no ato da entrega por segurança.")} 
+                  onClick={() => openInfo("Pagamentos", "Aceitamos Pix (com 5% de desconto), Cartões de Crédito e Débito.")} 
                   className="w-full flex items-center justify-between p-4 hover:bg-white/10 transition-all rounded-b-[2rem]"
                 >
                   <div className={`flex items-center gap-4 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
@@ -160,7 +166,6 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* SUPORTE */}
             <section className="space-y-4">
               <h3 className={`${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'} font-black text-xs uppercase tracking-[0.2em] px-4`}>Suporte Direto</h3>
               <div className={`${darkMode ? 'bg-white/5 border-white/5' : 'bg-white/30 border-white/20'} backdrop-blur-md rounded-[2.5rem] border p-2`}>
@@ -175,7 +180,7 @@ export default function SettingsPage() {
                   <textarea 
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="Sugestões ou elogios sobre nossos bolos..."
+                    placeholder="Sugestões ou elogios..."
                     className={`w-full rounded-2xl p-4 font-bold text-sm outline-none transition-all h-24 ${
                       darkMode ? 'bg-white/10 text-white' : 'bg-white/20 text-[#bc232d]'
                     }`}

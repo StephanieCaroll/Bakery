@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from './firebase';
+import { auth } from '../services/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
@@ -7,13 +7,9 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // NOVO: Estado Global do Tema
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
+  const [cart, setCart] = useState([]);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
-  // Efeito para aplicar a classe no 'html' e salvar preferência
   useEffect(() => {
     const root = window.document.documentElement;
     if (darkMode) {
@@ -33,10 +29,14 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const addToCart = (product, quantity) => {
+    setCart(prev => [...prev, { ...product, cartId: Date.now(), quantity }]);
+  };
+
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, logout, darkMode, setDarkMode }}>
+    <AuthContext.Provider value={{ user, logout, darkMode, setDarkMode, cart, setCart, addToCart }}>
       {!loading && children}
     </AuthContext.Provider>
   );

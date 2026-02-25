@@ -1,23 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Home, User, Heart, Settings, 
-  LogOut, UtensilsCrossed, Star, ShoppingCart 
+  Search, UtensilsCrossed, Heart, Star 
 } from 'lucide-react';
-import { db } from './firebase'; 
-import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../services/firebase'; 
+import { collection, getDocs, query, where, deleteDoc, doc, addDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../context/AuthContext';
 import ProductDetails from './ProductDetails';
+import Sidebar from '../components/SideBar'; 
 
 const scrollbarHideStyle = `
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
-const Toast = ({ message, show, onClose }) => {
+const GlobalLoading = ({ darkMode }) => (
+  <div className={`flex flex-col items-center justify-center h-[100dvh] w-full animate-in fade-in duration-500 ${
+    darkMode ? 'bg-zinc-950 text-white' : 'bg-[#bc232d] text-white'
+  }`}>
+    <div className="animate-spin mb-4">
+      <UtensilsCrossed size={40} />
+    </div>
+    <p className="font-black uppercase tracking-widest text-xs">Carregando...</p>
+  </div>
+);
+
+// Componente de Alerta Personalizado (Toast)
+const Toast = ({ message, show, onClose, darkMode }) => {
   useEffect(() => {
     if (show) {
-      const timer = setTimeout(() => onClose(), 3000);
+      const timer = setTimeout(() => onClose(), 400);
       return () => clearTimeout(timer);
     }
   }, [show, onClose]);
@@ -26,7 +38,14 @@ const Toast = ({ message, show, onClose }) => {
 
   return (
     <div className="fixed bottom-24 lg:bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-[#bc232d] text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/20 backdrop-blur-md">
+      <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border backdrop-blur-md transition-colors duration-500 ${
+        darkMode 
+        ? 'bg-zinc-800 border-white/10 text-white' 
+        : 'bg-[#bc232d] border-white/20 text-white'
+      }`}>
+        <div className="bg-white/20 p-1.5 rounded-full">
+          <UtensilsCrossed size={16} className="text-white" />
+        </div>
         <span className="font-bold uppercase tracking-tighter text-sm">{message}</span>
       </div>
     </div>
@@ -34,7 +53,7 @@ const Toast = ({ message, show, onClose }) => {
 };
 
 const CategoryFilter = ({ categories, selected, onSelect, darkMode }) => (
-  <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6 mb-6">
+  <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6 mb-6">
     {categories.map((cat) => (
       <button
         key={cat}
@@ -95,7 +114,7 @@ const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCa
 
 export default function BakeryApp() {
   const navigate = useNavigate();
-  const { user, logout, darkMode } = useAuth();
+  const { user, darkMode } = useAuth();
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
   const [popularItems, setPopularItems] = useState([]); 
@@ -111,24 +130,8 @@ export default function BakeryApp() {
     setToast({ show: true, message: msg });
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
-  const checkAuthAndNavigate = (path) => {
-    if (!user) {
-      navigate('/login');
-    } else {
-      navigate(path);
-    }
-  };
-
   const fetchFavorites = async () => {
-    if (!user) {
-      setUserFavorites([]);
-      return;
-    }
+    if (!user) return;
     try {
       const q = query(collection(db, "favorites"), where("userId", "==", user.uid));
       const querySnapshot = await getDocs(q);
@@ -138,15 +141,12 @@ export default function BakeryApp() {
       }));
       setUserFavorites(favs);
     } catch (error) {
-      console.error("Erro ao buscar favoritos:", error);
+      console.error(error);
     }
   };
 
   const toggleFavorite = async (product) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    if (!user) { navigate('/login'); return; }
     const existingFavorite = userFavorites.find(f => f.productId === product.id);
     try {
       if (existingFavorite) {
@@ -166,7 +166,7 @@ export default function BakeryApp() {
         showNotification(`${product.name} favoritado! 🤍`);
       }
     } catch (error) {
-      console.error("Erro ao alternar favorito:", error);
+      console.error(error);
     }
   };
 
@@ -176,10 +176,9 @@ export default function BakeryApp() {
         const querySnapshot = await getDocs(collection(db, "products"));
         const productsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPopularItems(productsList);
+        setTimeout(() => setLoading(false), 400);
       } catch (error) { 
-        console.error(error); 
-      } finally { 
-        setLoading(false); 
+        setLoading(false);
       }
     };
     fetchProducts();
@@ -198,6 +197,8 @@ export default function BakeryApp() {
     return matchesSearch && matchesCategory;
   });
 
+  if (loading) return <GlobalLoading darkMode={darkMode} />;
+
   return (
     <div className={`flex flex-col lg:flex-row h-[100dvh] font-sans overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'}`}>
       <style>{scrollbarHideStyle}</style>
@@ -206,36 +207,19 @@ export default function BakeryApp() {
         show={toast.show} 
         message={toast.message} 
         onClose={() => setToast({ ...toast, show: false })} 
+        darkMode={darkMode}
       />
 
-      {/* Menu Lateral/Inferior Dinâmico */}
-      <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r px-6 lg:px-0 z-50 transition-colors duration-500 ${
-        darkMode ? 'bg-zinc-900 border-white/5' : 'bg-[#bc232d] border-white/10'
-      }`}>
-        <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
-          <div className={`${darkMode ? 'bg-white text-zinc-900' : 'bg-white text-[#bc232d]'} hidden lg:flex p-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110`} onClick={() => setSelectedItem(null)}>
-            <UtensilsCrossed size={32} />
-          </div>
-          <nav className="flex lg:flex-col gap-8 lg:gap-12 text-white/50 w-full justify-around lg:items-center">
-            <Home className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => setSelectedItem(null)} />
-            <User className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => checkAuthAndNavigate('/perfil')} />
-            <Heart className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => checkAuthAndNavigate('/favoritos')} />
-            <ShoppingCart className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => checkAuthAndNavigate('/carrinho')} />
-            <Settings className="cursor-pointer hover:text-white transition-colors" size={28} onClick={() => checkAuthAndNavigate('/configuracoes')} />
-          </nav>
-        </div>
-        {user && <LogOut className="text-white/50 cursor-pointer hover:text-white hidden lg:block" size={28} onClick={handleLogout} />}
-      </aside>
+      <Sidebar onLogoClick={() => setSelectedItem(null)} />
 
-      {/* Main Content Dinâmico */}
-      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto order-1 lg:order-2 shadow-2xl h-full no-scrollbar transition-colors duration-500 ${
+      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto order-1 lg:order-2 shadow-2xl h-full transition-colors duration-500 border-none outline-none scrollbar-hide ${
         darkMode ? 'bg-zinc-900' : 'bg-[#f4a28c]'
       }`}>
         {!selectedItem ? (
           <>
             <header className="flex flex-col lg:flex-row justify-between lg:items-center mb-10 gap-6">
-              <div className="relative w-full lg:w-7/12 h-12 rounded-full overflow-hidden border-0">
-                <div className="absolute inset-0 border-0" style={{ 
+              <div className="relative w-full lg:w-7/12 h-12 rounded-full overflow-hidden">
+                <div className="absolute inset-0" style={{ 
                   background: darkMode 
                     ? 'linear-gradient(to right, #27272a 0%, #27272a 45%, #18181b 100%)' 
                     : 'linear-gradient(to right, #e44444 0%, #e44444 45%, #f4a28c 100%)' 
@@ -245,19 +229,19 @@ export default function BakeryApp() {
                   placeholder="Pesquisar no cardápio..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="relative w-full h-full bg-transparent rounded-full px-14 text-white placeholder-white/70 outline-none border-none ring-0 focus:ring-0 focus:border-none z-10 font-bold" 
+                  className="relative w-full h-full bg-transparent px-14 text-white placeholder-white/70 outline-none font-bold" 
                 />
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/90 z-20" size={22} />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/90" size={22} />
               </div>
 
               <div className="flex justify-center lg:justify-end items-center w-full lg:w-auto">
-                <span className={`${darkMode ? 'text-white/60' : 'text-[#bc232d]'} font-black text-lg uppercase tracking-tighter transition-colors`}>
+                <span className={`${darkMode ? 'text-white/60' : 'text-[#bc232d]'} font-black text-lg uppercase tracking-tighter`}>
                   {currentDate}
                 </span>
               </div>
             </header>
 
-            <section className={`${darkMode ? 'bg-zinc-800' : 'bg-[#e44444]'} rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 transition-colors`}>
+            <section className={`${darkMode ? 'bg-zinc-800' : 'bg-[#e44444]'} rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 shadow-xl`}>
                 <div className="hidden lg:block absolute -left-10 -top-8">
                   <img src="https://static.vecteezy.com/system/resources/thumbnails/047/814/133/small_2x/a-slice-of-strawberry-cake-with-strawberries-on-top-the-cake-is-cut-in-half-and-has-a-strawberry-on-each-half-isolated-on-a-transparent-background-png.png" alt="Bolo" className="w-72 h-60 object-contain drop-shadow-2xl" />
                 </div>
@@ -268,7 +252,7 @@ export default function BakeryApp() {
             </section>
 
             <section className="mb-20">
-              <h2 className={`${darkMode ? 'text-white' : 'text-[#bc232d]'} text-3xl font-black mb-6 uppercase tracking-tighter text-center lg:text-left transition-colors`}>
+              <h2 className={`${darkMode ? 'text-white' : 'text-[#bc232d]'} text-3xl font-black mb-6 uppercase tracking-tighter text-center lg:text-left`}>
                 Nosso Cardápio
               </h2>
 
@@ -279,34 +263,30 @@ export default function BakeryApp() {
                 darkMode={darkMode}
               />
               
-              {loading ? (
-                <div className={`${darkMode ? 'text-white/40' : 'text-[#bc232d]'} font-black text-center w-full animate-pulse uppercase`}>Carregando vitrine...</div>
-              ) : menuItems.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-20 pt-10">
-                  {menuItems.map((item, index) => (
-                    <ProductCard 
-                      key={`menu-${item.id}`} 
-                      item={item} 
-                      onSelect={setSelectedItem} 
-                      onFavorite={toggleFavorite}
-                      isFavorite={userFavorites.some(f => f.productId === item.id)}
-                      bgColor={darkMode 
-                        ? (index % 2 === 0 ? '#27272a' : '#3f3f46') 
-                        : (index % 2 === 0 ? '#E54C4D' : '#C51D28')
-                      }
-                      isMenuCard={true}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className={`${darkMode ? 'bg-white/5' : 'bg-white/20'} text-center py-10 rounded-[3rem] border border-white/10 transition-colors`}>
-                  <p className={`${darkMode ? 'text-white/20' : 'text-[#bc232d]'} font-black text-xl italic uppercase`}>Nenhum produto encontrado... 🧁</p>
-                </div>
-              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-20 pt-10">
+                {menuItems.map((item, index) => (
+                  <ProductCard 
+                    key={item.id} 
+                    item={item} 
+                    onSelect={setSelectedItem} 
+                    onFavorite={toggleFavorite}
+                    isFavorite={userFavorites.some(f => f.productId === item.id)}
+                    bgColor={darkMode 
+                      ? (index % 2 === 0 ? '#27272a' : '#3f3f46') 
+                      : (index % 2 === 0 ? '#E54C4D' : '#C51D28')
+                    }
+                    isMenuCard={true}
+                  />
+                ))}
+              </div>
             </section>
           </>
         ) : (
-          <ProductDetails item={selectedItem} onBack={() => setSelectedItem(null)} />
+          <ProductDetails 
+            item={selectedItem} 
+            onBack={() => setSelectedItem(null)} 
+            showNotification={showNotification} 
+          />
         )}
       </main>
     </div>

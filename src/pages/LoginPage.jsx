@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { auth, db } from './firebase';
+import { auth, db } from "../services/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, LogIn, UserPlus, Eye, EyeOff, MapPinned,
-  Home, User, Heart, ShoppingCart, Settings, UtensilsCrossed, LogOut
+  LogOut, UtensilsCrossed
 } from 'lucide-react';
-import { useAuth } from './AuthContext';
+import { useAuth } from "../context/AuthContext";
+import Sidebar from "../components/SideBar"; 
+
+const scrollbarHideStyle = `
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none !important;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+`;
 
 export default function LoginPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, darkMode } = useAuth();
   const navigate = useNavigate();
   
   const [isRegister, setIsRegister] = useState(false);
@@ -52,108 +63,109 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const inputStyle = `w-full p-4 rounded-2xl outline-none shadow-sm transition-colors ${
+    darkMode 
+    ? "bg-zinc-800/50 text-white placeholder-white/30 focus:bg-zinc-800" 
+    : "bg-white/60 text-[#bc232d] placeholder-[#bc232d]/50 focus:bg-white/80"
+  }`;
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-[#bc232d] font-sans overflow-hidden">
+    <div className={`flex flex-col lg:flex-row h-screen font-sans overflow-hidden transition-colors duration-500 ${
+      darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
+    }`}>
+  
+      <style>{scrollbarHideStyle}</style>
       
-      {/* Sidebar */}
-      <aside className="w-full lg:w-24 h-20 lg:h-full bg-[#bc232d] flex lg:flex-col items-center py-4 lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-white/10 px-6 lg:px-0 z-50">
-        <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
-          <div className="hidden lg:flex bg-white p-3 rounded-full text-[#bc232d] shadow-lg cursor-pointer" onClick={() => navigate('/')}>
-            <UtensilsCrossed size={32} />
-          </div>
-          <nav className="flex lg:flex-col gap-8 lg:gap-12 text-white/50 w-full justify-around lg:items-center">
-            <Home className="cursor-pointer hover:text-white" size={28} onClick={() => navigate('/')} />
-            <User className="text-white" size={28} />
-            <Heart className="cursor-pointer hover:text-white" size={28} onClick={() => navigate('/favoritos')} />
-            <ShoppingCart className="cursor-pointer hover:text-white" size={28} onClick={() => navigate('/carrinho')} />
-            <Settings className="cursor-pointer hover:text-white" size={28} onClick={() => navigate('/configuracoes')} />
-          </nav>
-        </div>
-        {user && <LogOut className="text-white/50 cursor-pointer hover:text-white hidden lg:block" size={28} onClick={handleLogout} />}
-      </aside>
+      <Sidebar onLogoClick={() => navigate('/')} />
 
-      {/* Conteúdo Principal com Scroll Fixado */}
-      <main className="flex-1 bg-[#f4a28c] lg:rounded-l-[5rem] overflow-y-auto order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12">
+      <main className={`flex-1 lg:rounded-l-[5rem] overflow-y-auto overflow-x-hidden order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12 transition-colors duration-500 border-none outline-none hide-scrollbar ${
+        darkMode ? 'bg-zinc-900 text-white' : 'bg-[#f4a28c] text-[#bc232d]'
+      }`}>
         <div className="max-w-2xl mx-auto py-8">
-          <button 
-            onClick={() => navigate('/')} 
-            className="flex items-center gap-2 text-[#bc232d] font-bold mb-8 hover:scale-105 transition outline-none"
-          >
-            <ArrowLeft size={20} /> VOLTAR AO MENU
-          </button>
 
-          <div className="bg-white/40 backdrop-blur-xl p-8 lg:p-12 rounded-[3.5rem] shadow-2xl border border-white/30">
-            <h2 className="text-4xl font-black text-[#bc232d] mb-8 text-center uppercase tracking-tighter">
+          <div className={`backdrop-blur-xl p-8 lg:p-12 rounded-[3.5rem] shadow-2xl border transition-colors duration-500 ${
+            darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/30'
+          }`}>
+            <h2 className={`text-4xl font-black mb-8 text-center uppercase tracking-tighter ${
+              darkMode ? 'text-white' : 'text-[#bc232d]'
+            }`}>
               {isRegister ? 'Criar Conta' : 'Entrar'}
             </h2>
 
             <form onSubmit={handleAuth} className="flex flex-col gap-4">
               {isRegister && (
                 <>
-                  <div className="flex flex-col gap-4 mb-4 border-b border-[#bc232d]/10 pb-6">
-                    <p className="text-[#bc232d] font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                  <div className={`flex flex-col gap-4 mb-4 border-b pb-6 ${
+                    darkMode ? 'border-white/10' : 'border-[#bc232d]/10'
+                  }`}>
+                    <p className={`font-black text-xs uppercase tracking-widest flex items-center gap-2 ${
+                      darkMode ? 'text-white/40' : 'text-[#bc232d]'
+                    }`}>
                       <MapPinned size={14}/> Informações Pessoais
                     </p>
+
+                     {/* DT Nascimento */}
                     <input 
                       type="text" placeholder="Nome Completo" required 
-                      className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d] placeholder-[#bc232d]/50 shadow-sm"
+                      className={inputStyle}
                       onChange={e => setFormData({...formData, name: e.target.value})} 
                     />
+                    
                     <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-[#bc232d] ml-4">DATA DE NASCIMENTO</label>
+                      <label className={`text-[10px] font-bold ml-4 ${
+                        darkMode ? 'text-white/40' : 'text-[#bc232d]'
+                      }`}>DATA DE NASCIMENTO</label>
                       <input 
                         type="date" required 
-                        className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={inputStyle}
                         onChange={e => setFormData({...formData, birthday: e.target.value})} 
                       />
                     </div>
                   </div>
 
+                {/* Endereço */}
                   <div className="flex flex-col gap-4 mb-4">
-                    <p className="text-[#bc232d] font-black text-xs uppercase tracking-widest">Endereço de Entrega</p>
+                    <p className={`font-black text-xs uppercase tracking-widest ${
+                      darkMode ? 'text-white/40' : 'text-[#bc232d]'
+                    }`}>Endereço de Entrega</p>
                     <div className="grid grid-cols-2 gap-4">
                       <input 
                         type="text" placeholder="CEP" required 
-                        className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={inputStyle}
                         onChange={e => setFormData({...formData, cep: e.target.value})} 
                       />
                       <input 
                         type="text" placeholder="Bairro" required 
-                        className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={inputStyle}
                         onChange={e => setFormData({...formData, neighborhood: e.target.value})} 
                       />
                     </div>
                     <div className="flex gap-4">
                       <input 
                         type="text" placeholder="Rua / Logradouro" required 
-                        className="flex-1 p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={inputStyle}
                         onChange={e => setFormData({...formData, street: e.target.value})} 
                       />
                       <input 
                         type="text" placeholder="Nº" required 
-                        className="w-24 p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={`${inputStyle} w-24`}
                         onChange={e => setFormData({...formData, number: e.target.value})} 
                       />
                     </div>
                     <input 
                       type="text" placeholder="Complemento (Apto, Bloco, Referência)" 
-                      className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                      className={inputStyle}
                       onChange={e => setFormData({...formData, complement: e.target.value})} 
                     />
                     <div className="grid grid-cols-2 gap-4">
                       <input 
                         type="text" placeholder="Cidade" required 
-                        className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={inputStyle}
                         onChange={e => setFormData({...formData, city: e.target.value})} 
                       />
                       <input 
                         type="text" placeholder="Estado (UF)" maxLength="2" required 
-                        className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                        className={inputStyle}
                         onChange={e => setFormData({...formData, state: e.target.value})} 
                       />
                     </div>
@@ -161,20 +173,25 @@ export default function LoginPage() {
                 </>
               )}
 
-              <p className="text-[#bc232d] font-black text-xs uppercase tracking-widest mt-4">Acesso à Conta</p>
+              <p className={`font-black text-xs uppercase tracking-widest mt-4 ${
+                darkMode ? 'text-white/40' : 'text-[#bc232d]'
+              }`}>Acesso à Conta</p>
+              
               <input 
                 type="email" placeholder="E-mail" required 
-                className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                className={inputStyle}
                 onChange={e => setFormData({...formData, email: e.target.value})} 
               />
 
               <div className="relative">
                 <input 
                   type={showPass ? "text" : "password"} placeholder="Senha" required 
-                  className="w-full p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                  className={inputStyle}
                   onChange={e => setFormData({...formData, password: e.target.value})} 
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-4 text-[#bc232d]/50">
+                <button type="button" onClick={() => setShowPass(!showPass)} className={`absolute right-4 top-4 ${
+                  darkMode ? 'text-white/20' : 'text-[#bc232d]/50'
+                }`}>
                   {showPass ? <EyeOff size={20}/> : <Eye size={20}/>}
                 </button>
               </div>
@@ -182,14 +199,16 @@ export default function LoginPage() {
               {isRegister && (
                 <input 
                   type="password" placeholder="Confirmar Senha" required 
-                  className="p-4 rounded-2xl bg-white/60 outline-none text-[#bc232d]"
+                  className={inputStyle}
                   onChange={e => setFormData({...formData, confirmPassword: e.target.value})} 
                 />
               )}
 
               <button 
                 type="submit" 
-                className="bg-[#bc232d] text-white font-black py-5 rounded-2xl mt-6 shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 uppercase tracking-widest"
+                className={`font-black py-5 rounded-2xl mt-6 shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2 uppercase tracking-widest ${
+                  darkMode ? 'bg-white text-zinc-950' : 'bg-[#bc232d] text-white'
+                }`}
               >
                 {isRegister ? <UserPlus size={22}/> : <LogIn size={22}/>}
                 {isRegister ? 'Finalizar Cadastro' : 'Entrar Agora'}
@@ -197,7 +216,9 @@ export default function LoginPage() {
             </form>
 
             <p 
-              className="text-center mt-8 text-[#bc232d] font-bold cursor-pointer hover:underline uppercase text-xs tracking-tighter" 
+              className={`text-center mt-8 font-bold cursor-pointer hover:underline uppercase text-xs tracking-tighter ${
+                darkMode ? 'text-white/60' : 'text-[#bc232d]'
+              }`} 
               onClick={() => setIsRegister(!isRegister)}
             >
               {isRegister ? 'Já tem uma conta? Clique para Entrar' : 'Novo por aqui? Crie sua conta agora'}

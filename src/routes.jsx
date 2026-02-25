@@ -8,6 +8,8 @@ import CartPage from './pages/CartPage';
 import FavoritesPage from './pages/FavoritesPage';
 import SettingsPage from './pages/SettingsPage';
 import FormProduct from './pages/FormProduct';
+import OrdersManager from './pages/OrdersManager';
+import ConfirmOrder from './pages/ConfirmOrder';
 
 export default function AppRoutes() {
   return (
@@ -29,6 +31,9 @@ export default function AppRoutes() {
           
           {/* Administração/Produtos */}
           <Route path="/form-produto" element={<FormProduct />} />
+          <Route path="/admin/orders" element={<OrdersManager />} />
+          <Route path="/confirmar-pedido/:orderId" element={<ConfirmOrder />} />
+          
         </Routes>
       </BrowserRouter>
     </AuthProvider>

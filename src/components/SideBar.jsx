@@ -1,7 +1,15 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, User, Heart, ShoppingCart, Settings, UtensilsCrossed, LogOut, PlusCircle } from 'lucide-react';
+import { 
+  Home, User, Heart, ShoppingCart, Settings, 
+  UtensilsCrossed, LogOut, PlusCircle, ClipboardList 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+const scrollbarHideStyle = `
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+`;
 
 export default function Sidebar({ onLogoClick }) {
   const navigate = useNavigate();
@@ -21,11 +29,14 @@ export default function Sidebar({ onLogoClick }) {
   };
 
   return (
-    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-50 transition-colors duration-500 ${
+    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-50 transition-colors duration-500 shadow-2xl ${
       darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
     }`}>
-      <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
+      <style>{scrollbarHideStyle}</style>
+      
+      <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full">
         
+        {/* Logo */}
         <div 
           className={`hidden lg:flex p-3 rounded-full cursor-pointer transition-transform hover:scale-110 shadow-md ${
             darkMode ? 'bg-white text-zinc-950' : 'bg-white text-[#bc232d]'
@@ -35,52 +46,72 @@ export default function Sidebar({ onLogoClick }) {
           <UtensilsCrossed size={32} />
         </div>
 
-        <nav className="flex lg:flex-col gap-8 lg:gap-12 w-full justify-around lg:items-center">
+        {/* Navegação Principal */}
+        <nav className="flex lg:flex-col gap-8 lg:gap-10 w-full px-6 lg:px-0 justify-start lg:items-center overflow-x-auto lg:overflow-x-visible hide-scrollbar snap-x">
           <Home 
-            className={`cursor-pointer transition-colors ${isActive('/') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
             size={28} 
             onClick={handleLogoAction} 
           />
+          
           <User 
-            className={`cursor-pointer transition-colors ${isActive('/perfil') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/perfil') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
             size={28} 
             onClick={() => navigate('/perfil')} 
           />
           
-          {/* Se for Admin, mostra o ícone de adicionar produto em destaque */}
           {isAdmin && (
             <PlusCircle 
-              className={`cursor-pointer transition-colors ${isActive('/form-produto') ? 'text-green-400' : 'text-white/30 hover:text-green-400'}`} 
+              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/form-produto') ? 'text-yellow-400' : 'text-white/30 hover:text-yellow-400'}`} 
               size={28} 
               onClick={() => navigate('/form-produto')} 
             />
           )}
 
+          {isAdmin && (
+            <ClipboardList 
+              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/admin/orders') ? 'text-blue-400' : 'text-white/30 hover:text-blue-400'}`} 
+              size={28} 
+              onClick={() => navigate('/admin/orders')} 
+            />
+          )}
+
           <Heart 
-            className={`cursor-pointer transition-colors ${isActive('/favoritos') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/favoritos') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
             size={28} 
             onClick={() => navigate('/favoritos')} 
           />
+          
           <ShoppingCart 
-            className={`cursor-pointer transition-colors ${isActive('/carrinho') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/carrinho') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
             size={28} 
             onClick={() => navigate('/carrinho')} 
           />
+
           <Settings 
-            className={`cursor-pointer transition-colors ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+            className={`lg:hidden cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
             size={28} 
             onClick={() => navigate('/configuracoes')} 
           />
         </nav>
       </div>
 
-      {user && (
-        <LogOut 
-          className="text-white/30 cursor-pointer hover:text-white hidden lg:block transition-colors" 
+      {/* Seção Inferior */}
+      <div className="hidden lg:flex lg:flex-col items-center gap-10">
+        <Settings 
+          className={`cursor-pointer transition-colors ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
           size={28} 
-          onClick={handleLogout} 
+          onClick={() => navigate('/configuracoes')} 
         />
-      )}
+
+        {user && (
+          <LogOut 
+            className="text-white/30 cursor-pointer hover:text-red-400 transition-colors" 
+            size={28} 
+            onClick={handleLogout} 
+          />
+        )}
+      </div>
     </aside>
   );
 }

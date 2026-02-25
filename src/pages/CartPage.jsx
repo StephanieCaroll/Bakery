@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Trash2, UtensilsCrossed } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Trash2, UtensilsCrossed, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import Sidebar from '../components/SideBar'; 
 
 const GlobalLoading = ({ darkMode }) => (
@@ -22,11 +24,11 @@ const scrollbarHideStyle = `
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { user, logout, cart, setCart, darkMode } = useAuth();
+  const { user, cart, setCart, darkMode } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
-    
     const timer = setTimeout(() => setIsLoading(false), 400);
     return () => clearTimeout(timer);
   }, []);
@@ -35,9 +37,59 @@ export default function CartPage() {
     setCart(prev => prev.filter(item => item.cartId !== cartId));
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const totalPedido = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+  // FUNÇÃO DE AUTOMAÇÃO E CHECKOUT
+  const handleCheckout = async () => {
+    if (!user) {
+      alert("Por favor, faça login para finalizar seu pedido! ✨");
+      navigate('/login');
+      return;
+    }
+
+    if (cart.length === 0) return;
+
+    setIsSending(true);
+
+    try {
+      // Salva o pedido no Firebase como "Pendente"
+      const orderData = {
+        userId: user.uid,
+        customerName: user.displayName || user.email.split('@')[0],
+        items: cart,
+        total: totalPedido,
+        status: "Pendente",
+        timestamp: new Date()
+      };
+
+      const docRef = await addDoc(collection(db, "orders"), orderData);
+      const orderId = docRef.id;
+
+      //Gera o link de confirmação (URL da Vercel)
+      const confirmLink = `https://${window.location.host}/confirmar-pedido/${orderId}`;
+
+      // Monta a mensagem para o WhatsApp
+      let mensagem = `*🧁 NOVO PEDIDO - BAKERY*%0A%0A`;
+      mensagem += `*Cliente:* ${orderData.customerName}%0A`;
+      mensagem += `*Itens:*%0A${cart.map(i => `• ${i.quantity}x ${i.name}`).join('%0A')}%0A%0A`;
+      mensagem += `*Total:* R$ ${totalPedido.toFixed(2)}%0A%0A`;
+      mensagem += `*AÇÃO DO VENDEDOR (CONFIRMAR):*%0A${confirmLink}`;
+
+      // Seu número de WhatsApp 
+      const meuNumero = "5581996306876"; // Exemplo Pernambuco
+
+      // Redireciona para o WhatsApp
+      window.open(`https://wa.me/${meuNumero}?text=${mensagem}`, '_blank');
+      
+      // Limpa o carrinho após enviar
+      setCart([]);
+      
+    } catch (error) {
+      console.error("Erro ao registrar pedido:", error);
+      alert("Ops! Ocorreu um erro ao processar seu pedido.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (isLoading) return <GlobalLoading darkMode={darkMode} />;
@@ -105,12 +157,17 @@ export default function CartPage() {
                 <div className="pt-8 border-t border-white/10 flex flex-col items-end">
                    <p className="text-xs font-black uppercase opacity-60">Total do Pedido</p>
                    <p className="text-5xl font-black tracking-tighter">
-                     R${cart.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2)}
+                     R${totalPedido.toFixed(2)}
                    </p>
-                   <button className={`mt-6 w-full lg:w-auto px-12 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 ${
-                     darkMode ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-[#bc232d] text-white hover:bg-[#a01d25]'
-                   }`}>
-                     Finalizar via WhatsApp
+                   
+                   <button 
+                    onClick={handleCheckout}
+                    disabled={isSending}
+                    className={`mt-6 w-full lg:w-auto px-12 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 ${
+                      darkMode ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-[#bc232d] text-white hover:bg-[#a01d25]'
+                    } ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                   >
+                     {isSending ? <Loader2 className="animate-spin" /> : 'Finalizar via WhatsApp'}
                    </button>
                 </div>
               </div>

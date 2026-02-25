@@ -25,7 +25,6 @@ const GlobalLoading = ({ darkMode }) => (
   </div>
 );
 
-// Componente de Alerta Personalizado (Toast)
 const Toast = ({ message, show, onClose, darkMode }) => {
   useEffect(() => {
     if (show) {
@@ -100,14 +99,27 @@ const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCa
       <span className="text-[11px] font-bold">{item.rating || "5.0"}</span>
     </div>
 
-    <h3 className="text-[15px] font-bold leading-tight mt-1 mb-2 truncate w-full pr-10 uppercase tracking-tighter">
+    {/* Padding-right maior (pr-20) para garantir que o nome nunca toque no valor */}
+    <h3 className="text-[15px] font-bold leading-tight mt-1 mb-2 truncate w-full pr-24 uppercase tracking-tighter">
       {item.name}
     </h3>
 
-    <div className="absolute bottom-6 right-3">
-      <div className="bg-black/20 backdrop-blur-md px-3 py-2 rounded-full flex items-center justify-center shadow-lg border border-white/10">
-        <span className="text-[10px] font-black italic tracking-tighter whitespace-nowrap">R$ {item.price}</span>
+    {/* Alinhamento dos Preços fixo no canto inferior direito */}
+    <div className="absolute bottom-4 right-4 flex flex-col items-end gap-1 min-w-[80px]">
+      <div className="bg-black/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center justify-center shadow-lg border border-white/10 w-fit">
+        <span className="text-xs font-black italic tracking-tighter whitespace-nowrap">
+          R$ {item.price}
+        </span>
       </div>
+      
+      {/* Reservamos o espaço mesmo que não tenha promoção para manter o padrão visual */}
+      {item.oldPrice && Number(item.oldPrice) > Number(item.price) ? (
+        <span className="text-[10px] font-bold line-through opacity-60 italic pr-2">
+          R$ {item.oldPrice}
+        </span>
+      ) : (
+        <div className="h-[15px]" /> /* Espaço vazio equivalente para não mover o card */
+      )}
     </div>
   </div>
 );

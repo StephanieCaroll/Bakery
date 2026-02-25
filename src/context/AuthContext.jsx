@@ -4,8 +4,11 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL?.replace(/['"]+/g, '');
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -24,6 +27,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+     
+      const checkAdmin = currentUser?.email === ADMIN_EMAIL;
+      setIsAdmin(checkAdmin);
+      
       setLoading(false);
     });
     return () => unsubscribe();
@@ -36,7 +43,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, logout, darkMode, setDarkMode, cart, setCart, addToCart }}>
+    <AuthContext.Provider value={{ user, isAdmin, logout, darkMode, setDarkMode, cart, setCart, addToCart }}>
       {!loading && children}
     </AuthContext.Provider>
   );

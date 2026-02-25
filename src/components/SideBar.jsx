@@ -1,12 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, User, Heart, ShoppingCart, Settings, UtensilsCrossed, LogOut } from 'lucide-react';
+import { Home, User, Heart, ShoppingCart, Settings, UtensilsCrossed, LogOut, PlusCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ onLogoClick }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, darkMode } = useAuth();
+  const { user, isAdmin, logout, darkMode } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -21,7 +21,7 @@ export default function Sidebar({ onLogoClick }) {
   };
 
   return (
-    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-50 transition-colors duration-500 border-none outline-none ${
+    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-50 transition-colors duration-500 ${
       darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
     }`}>
       <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
@@ -35,7 +35,6 @@ export default function Sidebar({ onLogoClick }) {
           <UtensilsCrossed size={32} />
         </div>
 
-        {/* Navegação */}
         <nav className="flex lg:flex-col gap-8 lg:gap-12 w-full justify-around lg:items-center">
           <Home 
             className={`cursor-pointer transition-colors ${isActive('/') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
@@ -47,6 +46,16 @@ export default function Sidebar({ onLogoClick }) {
             size={28} 
             onClick={() => navigate('/perfil')} 
           />
+          
+          {/* Se for Admin, mostra o ícone de adicionar produto em destaque */}
+          {isAdmin && (
+            <PlusCircle 
+              className={`cursor-pointer transition-colors ${isActive('/form-produto') ? 'text-green-400' : 'text-white/30 hover:text-green-400'}`} 
+              size={28} 
+              onClick={() => navigate('/form-produto')} 
+            />
+          )}
+
           <Heart 
             className={`cursor-pointer transition-colors ${isActive('/favoritos') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
             size={28} 

@@ -1,17 +1,16 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyANN2Vi3vUPAiCIXoVaTHUmY-p_WQtacrQ",
-  authDomain: "bakery-e5779.firebaseapp.com",
-  projectId: "bakery-e5779",
-  storageBucket: "bakery-e5779.firebasestorage.app",
-  messagingSenderId: "503980932740",
-  appId: "1:503980932740:web:80ed2b466ff15feb2d8cd1",
-  measurementId: "G-EB6KMS98QC"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const db = getFirestore(app);

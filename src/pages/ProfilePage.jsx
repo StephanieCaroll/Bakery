@@ -145,21 +145,40 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto py-4">
           
           {!user ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-               <div className={`p-12 rounded-[3rem] shadow-2xl border backdrop-blur-md ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/30'}`}>
-                  <h2 className="text-3xl font-black mb-6 uppercase tracking-tighter">Login Necessário</h2>
-                  <p className="mb-8 font-bold opacity-70">Você precisa estar logado para acessar seu perfil.</p>
-                  <button 
-                    onClick={() => navigate('/login')} 
-                    className={`flex items-center gap-3 px-10 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition-all uppercase tracking-widest ${
-                      darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'
-                    }`}
-                  >
-                    <LogIn size={20} /> Fazer Login
-                  </button>
-               </div>
-            </div>
-          ) : (
+           <div className="flex flex-col items-center justify-center h-[calc(100dvh-12rem)] text-center animate-in fade-in zoom-in-95 duration-500">
+    <div className={`p-10 lg:p-16 rounded-[4rem] shadow-2xl border backdrop-blur-md w-full max-w-lg transition-all ${
+      darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/30'
+    }`}>
+      {/* Ícone para dar um peso visual no centro */}
+      <div className={`w-20 h-20 mx-auto mb-8 rounded-full flex items-center justify-center ${
+        darkMode ? 'bg-white/10 text-white' : 'bg-[#bc232d]/10 text-[#bc232d]'
+      }`}>
+        <User size={40} />
+      </div>
+
+      <h2 className={`text-3xl lg:text-4xl font-black mb-4 uppercase tracking-tighter ${
+        darkMode ? 'text-white' : 'text-[#bc232d]'
+      }`}>
+        Login Necessário
+      </h2>
+      
+      <p className={`mb-10 font-bold opacity-60 uppercase text-xs tracking-widest ${
+        darkMode ? 'text-white' : 'text-[#bc232d]'
+      }`}>
+        Você precisa estar logado para acessar seu perfil.
+      </p>
+
+      <button 
+        onClick={() => navigate('/login')} 
+        className={`w-full flex items-center justify-center gap-3 px-10 py-5 rounded-[2rem] font-black shadow-xl hover:scale-[1.03] active:scale-95 transition-all uppercase tracking-widest ${
+          darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'
+        }`}
+      >
+        <LogIn size={22} /> Fazer Login
+      </button>
+    </div>
+  </div>
+) : (
             <>
               <div className="flex flex-col items-center mb-10 relative">
                 {!isEditing ? (

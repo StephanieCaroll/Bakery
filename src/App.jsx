@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, Home, User, Heart, Settings, 
-  LogOut, UtensilsCrossed, Star, ShoppingCart, CheckCircle2 
+  LogOut, UtensilsCrossed, Star, ShoppingCart 
 } from 'lucide-react';
 import { db } from './firebase'; 
 import { collection, getDocs, addDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import ProductDetails from './ProductDetails';
 
-// Estilo para esconder a barra de rolagem
 const scrollbarHideStyle = `
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -34,7 +33,7 @@ const Toast = ({ message, show, onClose }) => {
   );
 };
 
-const CategoryFilter = ({ categories, selected, onSelect }) => (
+const CategoryFilter = ({ categories, selected, onSelect, darkMode }) => (
   <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6 mb-6">
     {categories.map((cat) => (
       <button
@@ -42,9 +41,9 @@ const CategoryFilter = ({ categories, selected, onSelect }) => (
         onClick={() => onSelect(cat)}
         className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 ${
           selected === cat 
-          ? 'bg-[#bc232d] text-white border-[#bc232d] shadow-lg scale-105' 
-          : 'bg-white/20 text-[#bc232d] border-transparent hover:bg-white/40'
-        }`}
+          ? (darkMode ? 'bg-white text-zinc-900 border-white' : 'bg-[#bc232d] text-white border-[#bc232d]') 
+          : (darkMode ? 'bg-white/10 text-white border-transparent hover:bg-white/20' : 'bg-white/20 text-[#bc232d] border-transparent hover:bg-white/40')
+        } shadow-lg scale-105`}
       >
         {cat}
       </button>
@@ -58,7 +57,6 @@ const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCa
     style={{ backgroundColor: bgColor }} 
     className={`${isMenuCard ? 'w-full' : 'min-w-[75vw] sm:min-w-[280px] lg:min-w-0'} snap-center p-4 pt-14 rounded-[2.5rem] text-white relative flex flex-col h-44 shadow-xl transition-all hover:scale-105 cursor-pointer group mb-4`}
   >
-   
     <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-32 h-32 flex items-center justify-center">
       <img 
         src={item.image} 
@@ -88,7 +86,7 @@ const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCa
     </h3>
 
     <div className="absolute bottom-6 right-3">
-      <div className="bg-[#ae1f23] px-3 py-2 rounded-full flex items-center justify-center shadow-lg border border-white/10">
+      <div className="bg-black/20 backdrop-blur-md px-3 py-2 rounded-full flex items-center justify-center shadow-lg border border-white/10">
         <span className="text-[10px] font-black italic tracking-tighter whitespace-nowrap">R$ {item.price}</span>
       </div>
     </div>
@@ -97,7 +95,7 @@ const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCa
 
 export default function BakeryApp() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, darkMode } = useAuth();
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentDate, setCurrentDate] = useState("");
   const [popularItems, setPopularItems] = useState([]); 
@@ -149,9 +147,7 @@ export default function BakeryApp() {
       navigate('/login');
       return;
     }
-
     const existingFavorite = userFavorites.find(f => f.productId === product.id);
-
     try {
       if (existingFavorite) {
         await deleteDoc(doc(db, "favorites", existingFavorite.favDocId));
@@ -196,24 +192,14 @@ export default function BakeryApp() {
     setCurrentDate(formattedDate);
   }, []);
 
-  const topRatedItems = [...popularItems]
-    .sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0))
-    .slice(0, 5);
-
-  const newestItems = [...popularItems]
-    .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)) 
-    .slice(0, 5);
-
   const menuItems = popularItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "Todos" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const carrosselContainerClass = "flex lg:grid lg:grid-cols-5 overflow-x-auto lg:overflow-visible gap-x-8 gap-y-20 pb-10 pt-10 -mx-6 px-6 snap-x snap-mandatory scroll-smooth no-scrollbar";
-
   return (
-    <div className="flex flex-col lg:flex-row h-[100dvh] bg-[#bc232d] font-sans overflow-hidden">
+    <div className={`flex flex-col lg:flex-row h-[100dvh] font-sans overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'}`}>
       <style>{scrollbarHideStyle}</style>
       
       <Toast 
@@ -222,10 +208,12 @@ export default function BakeryApp() {
         onClose={() => setToast({ ...toast, show: false })} 
       />
 
-      {/* Menu Lateral/Inferior Ajustado */}
-      <aside className="w-full lg:w-24 h-auto lg:h-full bg-[#bc232d] flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-white/10 px-6 lg:px-0 z-50">
+      {/* Menu Lateral/Inferior Dinâmico */}
+      <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 border-t lg:border-t-0 lg:border-r px-6 lg:px-0 z-50 transition-colors duration-500 ${
+        darkMode ? 'bg-zinc-900 border-white/5' : 'bg-[#bc232d] border-white/10'
+      }`}>
         <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full justify-around lg:justify-start">
-          <div className="hidden lg:flex bg-white p-3 rounded-full text-[#bc232d] shadow-lg cursor-pointer transition-transform hover:scale-110" onClick={() => setSelectedItem(null)}>
+          <div className={`${darkMode ? 'bg-white text-zinc-900' : 'bg-white text-[#bc232d]'} hidden lg:flex p-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-110`} onClick={() => setSelectedItem(null)}>
             <UtensilsCrossed size={32} />
           </div>
           <nav className="flex lg:flex-col gap-8 lg:gap-12 text-white/50 w-full justify-around lg:items-center">
@@ -239,12 +227,19 @@ export default function BakeryApp() {
         {user && <LogOut className="text-white/50 cursor-pointer hover:text-white hidden lg:block" size={28} onClick={handleLogout} />}
       </aside>
 
-      <main className="flex-1 bg-[#f4a28c] lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto order-1 lg:order-2 shadow-2xl h-full no-scrollbar">
+      {/* Main Content Dinâmico */}
+      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto order-1 lg:order-2 shadow-2xl h-full no-scrollbar transition-colors duration-500 ${
+        darkMode ? 'bg-zinc-900' : 'bg-[#f4a28c]'
+      }`}>
         {!selectedItem ? (
           <>
             <header className="flex flex-col lg:flex-row justify-between lg:items-center mb-10 gap-6">
-              <div className="relative w-full lg:w-7/12 h-12  rounded-full overflow-hidden border-0">
-                <div className="absolute inset-0 border-0" style={{ background: 'linear-gradient(to right, #e44444 0%, #e44444 45%, #f4a28c 100%)' }}></div>
+              <div className="relative w-full lg:w-7/12 h-12 rounded-full overflow-hidden border-0">
+                <div className="absolute inset-0 border-0" style={{ 
+                  background: darkMode 
+                    ? 'linear-gradient(to right, #27272a 0%, #27272a 45%, #18181b 100%)' 
+                    : 'linear-gradient(to right, #e44444 0%, #e44444 45%, #f4a28c 100%)' 
+                }}></div>
                 <input 
                   type="text" 
                   placeholder="Pesquisar no cardápio..." 
@@ -256,11 +251,13 @@ export default function BakeryApp() {
               </div>
 
               <div className="flex justify-center lg:justify-end items-center w-full lg:w-auto">
-                <span className="text-[#bc232d] font-black text-lg uppercase tracking-tighter">{currentDate}</span>
+                <span className={`${darkMode ? 'text-white/60' : 'text-[#bc232d]'} font-black text-lg uppercase tracking-tighter transition-colors`}>
+                  {currentDate}
+                </span>
               </div>
             </header>
 
-            <section className="bg-[#e44444] rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 ">
+            <section className={`${darkMode ? 'bg-zinc-800' : 'bg-[#e44444]'} rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 transition-colors`}>
                 <div className="hidden lg:block absolute -left-10 -top-8">
                   <img src="https://static.vecteezy.com/system/resources/thumbnails/047/814/133/small_2x/a-slice-of-strawberry-cake-with-strawberries-on-top-the-cake-is-cut-in-half-and-has-a-strawberry-on-each-half-isolated-on-a-transparent-background-png.png" alt="Bolo" className="w-72 h-60 object-contain drop-shadow-2xl" />
                 </div>
@@ -271,7 +268,7 @@ export default function BakeryApp() {
             </section>
 
             <section className="mb-20">
-              <h2 className="text-[#bc232d] text-3xl font-black mb-6 uppercase tracking-tighter text-center lg:text-left">
+              <h2 className={`${darkMode ? 'text-white' : 'text-[#bc232d]'} text-3xl font-black mb-6 uppercase tracking-tighter text-center lg:text-left transition-colors`}>
                 Nosso Cardápio
               </h2>
 
@@ -279,10 +276,11 @@ export default function BakeryApp() {
                 categories={categories} 
                 selected={selectedCategory} 
                 onSelect={setSelectedCategory} 
+                darkMode={darkMode}
               />
               
               {loading ? (
-                <div className="text-[#bc232d] font-black text-center w-full animate-pulse uppercase">Carregando vitrine...</div>
+                <div className={`${darkMode ? 'text-white/40' : 'text-[#bc232d]'} font-black text-center w-full animate-pulse uppercase`}>Carregando vitrine...</div>
               ) : menuItems.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-20 pt-10">
                   {menuItems.map((item, index) => (
@@ -292,14 +290,17 @@ export default function BakeryApp() {
                       onSelect={setSelectedItem} 
                       onFavorite={toggleFavorite}
                       isFavorite={userFavorites.some(f => f.productId === item.id)}
-                      bgColor={index % 2 === 0 ? '#E54C4D' : '#C51D28'}
+                      bgColor={darkMode 
+                        ? (index % 2 === 0 ? '#27272a' : '#3f3f46') 
+                        : (index % 2 === 0 ? '#E54C4D' : '#C51D28')
+                      }
                       isMenuCard={true}
                     />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-10 bg-white/20 rounded-[3rem] border border-white/10">
-                  <p className="text-[#bc232d] font-black text-xl opacity-60 italic uppercase">Nenhum produto encontrado... 🧁</p>
+                <div className={`${darkMode ? 'bg-white/5' : 'bg-white/20'} text-center py-10 rounded-[3rem] border border-white/10 transition-colors`}>
+                  <p className={`${darkMode ? 'text-white/20' : 'text-[#bc232d]'} font-black text-xl italic uppercase`}>Nenhum produto encontrado... 🧁</p>
                 </div>
               )}
             </section>

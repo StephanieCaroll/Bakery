@@ -49,27 +49,35 @@ export default function OrdersManager() {
     setStats({ daily: dia, monthly: mes });
   };
 
-  // --- FUNÇÃO DE MUDANÇA DE STATUS + WHATSAPP ---
-  const handleStatusChange = (order, newStatus) => {
-    // 1. GERA A MENSAGEM
-    const phone = order.phone?.replace(/\D/g, "");
-    if (phone) {
-      let message = "";
-      if (newStatus === "Preparando") {
-        message = `Oi ${order.customerName}! 🧁 Passando para avisar que já estamos preparando o seu pedido com muito carinho aqui na Bakery! 👨‍🍳`;
-      } else if (newStatus === "Saiu para Entrega") {
-        message = `Boas notícias, ${order.customerName}! 🚚💨 Seu pedido acabou de sair para entrega e logo chegará até você!`;
-      } else if (newStatus === "Concluído") {
-        message = `Pedido entregue! ✨\n\nMuito obrigado pela preferência, ${order.customerName}! Esperamos que ame cada pedaço. 🍰\n\nSe puder, nos marque no Instagram @stephaniecarolinedev! ❤️`;
-      }
+  const getWhatsAppUrl = (order, newStatus) => {
+  
+    const rawPhone = order.phone || order.telefone || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "");
 
-      // 2. ABRE O WHATSAPP IMEDIATAMENTE (SÍNCRONO)
-      // Isso impede que o navegador bloqueie a janela
-      const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
-      window.open(url, '_blank', 'noreferrer');
+    if (!cleanPhone) return null;
+
+    let msg = "";
+    if (newStatus === "Preparando") {
+      msg = `Oi ${order.customerName}! 🧁 Passando para avisar que já estamos preparando o seu pedido com muito carinho aqui na Bakery! 👨‍🍳`;
+    } else if (newStatus === "Saiu para Entrega") {
+      msg = `Boas notícias, ${order.customerName}! 🚚💨 Seu pedido acabou de sair para entrega e logo chegará até você!`;
+    } else if (newStatus === "Concluído") {
+      msg = `Pedido entregue! ✨\n\nMuito obrigado pela preferência, ${order.customerName}! Esperamos que ame cada pedaço. 🍰\n\nSe puder, nos marque no Instagram @stephaniecarolinedev! ❤️`;
     }
 
-    // 3. ATUALIZA O FIREBASE EM SEGUNDO PLANO
+    return `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}`;
+  };
+
+  // FUNÇÃO QUE UNE O LINK COM A ATUALIZAÇÃO 
+  const handleStatusChange = (order, newStatus) => {
+    const url = getWhatsAppUrl(order, newStatus);
+    
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      alert("⚠️ Não encontrei o telefone deste cliente no pedido. Verifique o cadastro dele.");
+    }
+
     const orderRef = doc(db, "orders", order.id);
     updateDoc(orderRef, { 
       status: newStatus,
@@ -109,7 +117,6 @@ export default function OrdersManager() {
                Gestão de<br/>Pedidos
              </h2>
 
-             {/* FILTRO NO TOPO */}
              <div className="flex flex-wrap gap-2 p-2 rounded-3xl bg-black/5 backdrop-blur-sm">
                 {["Todos", "Pendente", "Preparando", "Saiu para Entrega", "Concluído"].map(s => (
                   <button key={s} onClick={() => setFiltroStatus(s)}
@@ -122,8 +129,7 @@ export default function OrdersManager() {
              </div>
           </header>
 
-          {/* CARDS DE FATURAMENTO */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 text-white">
             <div className={`${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20'} p-8 rounded-[3rem] border shadow-xl flex items-center gap-6`}>
               <div className="bg-green-500 p-4 rounded-3xl text-white shadow-lg"><DollarSign size={32} /></div>
               <div>
@@ -159,18 +165,14 @@ export default function OrdersManager() {
 
                   <div className="flex flex-wrap items-center gap-3">
                     <button onClick={() => handleStatusChange(order, "Preparando")} className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${order.status === "Preparando" ? 'bg-blue-500 text-white border-blue-500 shadow-lg' : 'opacity-40 border-current hover:opacity-100'}`}><Utensils size={14} /> Preparar</button>
-                    
-                    {/* BOTÃO ENTREGAR - COM NOME "SAIU PARA ENTREGA" E WHATSAPP */}
                     <button onClick={() => handleStatusChange(order, "Saiu para Entrega")} className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${order.status === "Saiu para Entrega" ? 'bg-purple-500 text-white border-purple-500 shadow-lg' : 'opacity-40 border-current hover:opacity-100'}`}><Truck size={14} /> Saiu para Entrega</button>
-                    
                     <button onClick={() => handleStatusChange(order, "Concluído")} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${order.status === "Concluído" ? 'bg-green-600 border-green-600 text-white shadow-lg' : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'}`}><CheckCircle2 size={16} /> Concluir</button>
-                    
                     <button onClick={() => deletarPedido(order.id)} className="p-3 text-red-500 hover:bg-red-500/10 rounded-2xl ml-4"><Trash2 size={22} /></button>
                   </div>
                 </div>
                 
                 <div className={`mt-8 pt-8 border-t flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 ${darkMode ? 'border-white/10' : 'border-black/5'}`}>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 text-inherit">
                       {order.items?.map((item, idx) => (
                         <div key={idx} className={`px-4 py-2 rounded-2xl flex items-center gap-2 ${darkMode ? 'bg-white/10 text-white' : 'bg-black/5 text-[#bc232d]'}`}>
                            <span className="font-black">{item.quantity}x</span>

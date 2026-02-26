@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Trash2, UtensilsCrossed, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import Sidebar from '../components/SideBar'; 
 
 const GlobalLoading = ({ darkMode }) => (
@@ -39,7 +39,7 @@ export default function CartPage() {
 
   const totalPedido = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  // FUNÇÃO DE AUTOMAÇÃO E CHECKOUT
+  // FUNÇÃO DE AUTOMAÇÃO E CHECKOUT ATUALIZADA
   const handleCheckout = async () => {
     if (!user) {
       alert("Por favor, faça login para finalizar seu pedido! ✨");
@@ -52,10 +52,25 @@ export default function CartPage() {
     setIsSending(true);
 
     try {
-      // Salva o pedido no Firebase como "Pendente"
+      // BUSCA O NOME E TELEFONE REAL NO PERFIL DO FIREBASE
+      const profileSnap = await getDoc(doc(db, "profiles", user.uid));
+      let userData = {
+        name: user.email.split('@')[0], 
+        phone: ""
+      };
+
+      if (profileSnap.exists()) {
+        const pData = profileSnap.data();
+        userData.name = pData.name;
+        userData.phone = pData.phone;
+      }
+
+      // SALVA O PEDIDO NO FIREBASE
       const orderData = {
         userId: user.uid,
-        customerName: user.displayName || user.email.split('@')[0],
+        customerName: userData.name, 
+        phone: userData.phone,      
+        email: user.email,
         items: cart,
         total: totalPedido,
         status: "Pendente",
@@ -65,20 +80,22 @@ export default function CartPage() {
       const docRef = await addDoc(collection(db, "orders"), orderData);
       const orderId = docRef.id;
 
-      //Gera o link de confirmação (URL da Vercel)
+      // GERA O LINK DE CONFIRMAÇÃO
       const confirmLink = `https://${window.location.host}/confirmar-pedido/${orderId}`;
 
-      // Monta a mensagem para o WhatsApp
+      // MONTA A MENSAGEM DO WHATSAPP (AGORA COM NOME E E-MAIL SEPARADOS)
       let mensagem = `*🧁 NOVO PEDIDO - BAKERY*%0A%0A`;
-      mensagem += `*Cliente:* ${orderData.customerName}%0A`;
+      mensagem += `*Cliente:* ${userData.name}%0A`;
+      mensagem += `*E-mail:* ${user.email}%0A`;
+      mensagem += `*WhatsApp:* ${userData.phone}%0A%0A`;
       mensagem += `*Itens:*%0A${cart.map(i => `• ${i.quantity}x ${i.name}`).join('%0A')}%0A%0A`;
       mensagem += `*Total:* R$ ${totalPedido.toFixed(2)}%0A%0A`;
       mensagem += `*AÇÃO DO VENDEDOR (CONFIRMAR):*%0A${confirmLink}`;
 
-      // Seu número de WhatsApp 
-      const meuNumero = "5581996306876"; // Exemplo Pernambuco
+      // Seu número de WhatsApp(Onde você recebe os pedidos)
+      const meuNumero = "5581996306876"; 
 
-      // Redireciona para o WhatsApp
+      // REDIRECIONA PARA O WHATSAPP
       window.open(`https://wa.me/${meuNumero}?text=${mensagem}`, '_blank');
       
       // Limpa o carrinho após enviar
@@ -126,7 +143,7 @@ export default function CartPage() {
                 Seu carrinho está vazio... por enquanto! 🍰
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 text-inherit">
                 {cart.map((item) => (
                   <div key={item.cartId} className={`flex items-center justify-between p-6 rounded-[2rem] border transition-colors ${
                     darkMode ? 'bg-zinc-800/50 border-white/5' : 'bg-white/40 border-[#bc232d]/10'
@@ -143,7 +160,7 @@ export default function CartPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
-                      <span className="font-black text-xl">R${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-black text-xl text-inherit">R${(item.price * item.quantity).toFixed(2)}</span>
                       <button 
                         onClick={() => removeItem(item.cartId)} 
                         className="text-red-500 hover:scale-125 transition-transform p-2 hover:bg-red-500/10 rounded-xl"
@@ -154,7 +171,7 @@ export default function CartPage() {
                   </div>
                 ))}
                 
-                <div className="pt-8 border-t border-white/10 flex flex-col items-end">
+                <div className="pt-8 border-t border-white/10 flex flex-col items-end text-inherit">
                    <p className="text-xs font-black uppercase opacity-60">Total do Pedido</p>
                    <p className="text-5xl font-black tracking-tighter">
                      R${totalPedido.toFixed(2)}

@@ -11,7 +11,6 @@ const scrollbarHideStyle = `
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
-// Componente de Alerta Personalizado (Toast)
 const CustomToast = ({ message, show, onClose, darkMode, type = "success" }) => {
   useEffect(() => {
     if (show) {
@@ -48,7 +47,6 @@ export default function FormProduto() {
   const [editandoId, setEditandoId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
-  // Estados para cálculo de promoção
   const [porcentagem, setPorcentagem] = useState('');
   const [precoFinalCalculado, setPrecoFinalCalculado] = useState(null);
 
@@ -65,7 +63,6 @@ export default function FormProduto() {
     carregarProdutos();
   }, [isAdmin, navigate]);
 
-  // Lógica de cálculo automático de promoção
   useEffect(() => {
     if (produto.oldPrice && porcentagem) {
       const valorBase = parseFloat(produto.oldPrice);
@@ -155,7 +152,7 @@ export default function FormProduto() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 h-full overflow-hidden">
             
             {/* Formulário */}
-            <div className={`flex flex-col h-fit ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/20'} backdrop-blur-md p-8 rounded-[3rem] border shadow-2xl`}>
+            <div className={`flex flex-col h-fit ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/20'} backdrop-blur-md p-8 rounded-[3rem] `}>
               <div className="flex items-center gap-4 mb-6">
                 <div className={`p-3 rounded-2xl ${darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'}`}>
                   <UtensilsCrossed size={32} />

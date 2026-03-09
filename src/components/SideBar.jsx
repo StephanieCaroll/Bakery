@@ -30,8 +30,10 @@ export default function Sidebar({ onLogoClick }) {
 
   return (
     <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(0.8rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-[100] transition-colors duration-500 shadow-2xl ${
-      darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
-    }`}>
+      darkMode 
+        ? 'bg-zinc-950 shadow-black' 
+        : 'bg-[#bc232d] shadow-[#bc232d]/40' 
+    } border-r ${darkMode ? 'border-white/5' : 'border-black/5'}`}>
       <style>{scrollbarHideStyle}</style>
       
       <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full">
@@ -97,7 +99,6 @@ export default function Sidebar({ onLogoClick }) {
         </nav>
       </div>
 
-      {/* Seção Inferior - Desktop */}
       <div className="hidden lg:flex lg:flex-col items-center gap-10">
         <Settings 
           className={`cursor-pointer transition-colors ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from "../services/firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
-import { ArrowLeft, Save, Loader2, UtensilsCrossed, Trash2, Edit3, CheckCircle2, AlertCircle, Percent, Eye, X } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, UtensilsCrossed, Trash2, Edit3, CheckCircle2, AlertCircle, Percent, Eye, X, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/SideBar";
@@ -52,7 +52,7 @@ export default function FormProduto() {
   const [precoFinalCalculado, setPrecoFinalCalculado] = useState(null);
 
   const [produto, setProduto] = useState({
-    name: '', price: '', oldPrice: '', rating: '', image: '', description: '', category: ''
+    name: '', price: '', oldPrice: '', rating: '', image: '', description: '', category: '', stock: ''
   });
 
   const showMsg = (message, type = "success") => {
@@ -94,7 +94,8 @@ export default function FormProduto() {
         ...produto,
         price: Number(produto.price),
         oldPrice: produto.oldPrice ? Number(produto.oldPrice) : null,
-        rating: Number(produto.rating)
+        rating: Number(produto.rating),
+        stock: Number(produto.stock)
       };
 
       if (editandoId) {
@@ -113,14 +114,14 @@ export default function FormProduto() {
 
   const prepararEdicao = (item) => {
     setEditandoId(item.id);
-    setProduto({ ...item, oldPrice: item.oldPrice || item.price });
+    setProduto({ ...item, oldPrice: item.oldPrice || item.price, stock: item.stock || '' });
     setPorcentagem('');
   };
 
   const limparFormulario = () => {
     setEditandoId(null);
     setPorcentagem('');
-    setProduto({ name: '', price: '', oldPrice: '', rating: '', image: '', description: '', category: '' });
+    setProduto({ name: '', price: '', oldPrice: '', rating: '', image: '', description: '', category: '', stock: '' });
   };
 
   const deletarProduto = async (id) => {
@@ -142,7 +143,6 @@ export default function FormProduto() {
       <style>{scrollbarHideStyle}</style>
       <CustomToast show={toast.show} message={toast.message} type={toast.type} darkMode={darkMode} onClose={() => setToast({ ...toast, show: false })} />
       
-      {/* Modal de Pré-visualização */}
       {previewItem && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className={`relative w-full max-w-sm rounded-[3.5rem] p-8 shadow-2xl border transition-all ${
@@ -162,6 +162,9 @@ export default function FormProduto() {
                 )}
               </div>
               <p className={`text-xs font-bold uppercase opacity-70 leading-relaxed ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{previewItem.description}</p>
+              <div className={`mt-4 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${darkMode ? 'bg-white/10 text-white' : 'bg-[#bc232d] text-white'}`}>
+                Stock: {previewItem.stock || 0} unid.
+              </div>
             </div>
           </div>
         </div>
@@ -169,16 +172,15 @@ export default function FormProduto() {
 
       <Sidebar onLogoClick={() => navigate('/')} />
 
-      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 order-1 lg:order-2 shadow-2xl h-full transition-colors duration-500 border-none outline-none overflow-y-auto lg:overflow-hidden scrollbar-hide pb-32 lg:pb-12 ${
+      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 order-1 lg:order-2 shadow-2xl h-full transition-colors duration-500 border-none outline-none overflow-y-auto scrollbar-hide pb-32 lg:pb-12 ${
         darkMode ? 'bg-zinc-900' : 'bg-[#f4a28c]'
       }`}>
         
-        <div className="max-w-6xl mx-auto h-full flex flex-col py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:h-full lg:overflow-hidden">
+        <div className="max-w-6xl mx-auto flex flex-col py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             
-            {/* Formulário */}
-            <div className={`flex flex-col h-fit ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/20'} backdrop-blur-md p-8 rounded-[3rem]`}>
-              <div className="flex items-center gap-4 mb-6">
+            <div className={`flex flex-col h-auto ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/20'} backdrop-blur-md p-8 lg:p-10 rounded-[3rem]`}>
+              <div className="flex items-center gap-4 mb-8">
                 <div className={`p-3 rounded-2xl ${darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'}`}>
                   <UtensilsCrossed size={32} />
                 </div>
@@ -187,8 +189,9 @@ export default function FormProduto() {
                 </h2>
               </div>
               
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 <input type="text" placeholder="Nome do Produto" required className={inputStyle} value={produto.name} onChange={(e) => setProduto({...produto, name: e.target.value})} />
+                
                 <select required className={`${inputStyle} appearance-none cursor-pointer`} value={produto.category} onChange={(e) => setProduto({...produto, category: e.target.value})}>
                   <option value="" disabled>Categoria</option>
                   <option value="Bolos">Bolos</option>
@@ -209,53 +212,57 @@ export default function FormProduto() {
                   </div>
                 </div>
 
-                {precoFinalCalculado && (
-                  <div className={`p-4 rounded-2xl text-center font-black animate-pulse ${darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'}`}>
-                    NOVO VALOR: R$ {precoFinalCalculado}
-                  </div>
-                )}
-
                 <div className="grid grid-cols-2 gap-4">
                   <input type="number" step="0.1" max="5" placeholder="Estrelas" className={inputStyle} value={produto.rating} onChange={(e) => setProduto({...produto, rating: e.target.value})} />
-                  <input type="text" placeholder="URL da Foto" required className={inputStyle} value={produto.image} onChange={(e) => setProduto({...produto, image: e.target.value})} />
+                  <div className="relative flex items-center">
+                    <input type="number" placeholder="Stock" required className={`${inputStyle} pr-10`} value={produto.stock} onChange={(e) => setProduto({...produto, stock: e.target.value})} />
+                    <Hash size={16} className="absolute right-5 opacity-40" />
+                  </div>
                 </div>
 
-                <textarea placeholder="Descrição..." rows="2" className={`${inputStyle} resize-none`} value={produto.description} onChange={(e) => setProduto({...produto, description: e.target.value})} />
+                <input type="text" placeholder="URL da Foto" required className={inputStyle} value={produto.image} onChange={(e) => setProduto({...produto, image: e.target.value})} />
+                
+                <textarea placeholder="Descrição..." rows="3" className={`${inputStyle} resize-none`} value={produto.description} onChange={(e) => setProduto({...produto, description: e.target.value})} />
 
-                <div className="flex gap-4">
-                  <button type="submit" disabled={loading} className={`flex-1 font-black py-4 rounded-2xl shadow-2xl flex items-center justify-center gap-3 transition-all uppercase tracking-tighter text-lg ${
-                    darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'
+                <div className="flex gap-4 pt-4">
+                  <button type="submit" disabled={loading} className={`flex-1 font-black py-5 rounded-[2rem] shadow-2xl flex items-center justify-center gap-3 transition-all active:scale-95 uppercase tracking-widest text-lg ${
+                    darkMode ? 'bg-white text-zinc-900 hover:bg-zinc-100' : 'bg-[#bc232d] text-white hover:brightness-110'
                   }`}>
                     {loading ? <Loader2 className="animate-spin" /> : <Save size={24} />} 
                     {editandoId ? 'Atualizar' : 'Salvar'}
                   </button>
-                  {editandoId && <button type="button" onClick={limparFormulario} className="px-6 font-black rounded-2xl bg-zinc-500 text-white uppercase shadow-lg">X</button>}
+                  {editandoId && (
+                    <button type="button" onClick={limparFormulario} className="px-8 font-black rounded-[2rem] bg-zinc-500 text-white uppercase shadow-lg hover:bg-zinc-600 transition-colors">
+                      X
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
 
             {/* Lista de Itens */}
-            <div className="flex flex-col lg:h-full lg:overflow-hidden pb-10 lg:pb-0">
+            <div className="flex flex-col pb-20 lg:pb-0">
               <h3 className={`text-xl font-black uppercase tracking-widest opacity-50 mb-6 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
                 Itens ({meusProdutos.length})
               </h3>
               
-              <div className="flex-1 space-y-4 lg:overflow-y-auto pr-2 scrollbar-hide">
+              <div className="space-y-4 pr-2 scrollbar-hide">
                 {meusProdutos.map(item => (
                   <div key={item.id} className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-[2rem] border transition-all gap-4 ${
                     darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20 shadow-md'
                   }`}>
                     <div className="flex items-center gap-4 w-full overflow-hidden">
                       <img src={item.image} alt="" className="w-14 h-14 min-w-[56px] rounded-2xl object-cover shadow-lg" />
-                      <div className="overflow-hidden">
-                        <p className={`text-[9px] font-black uppercase truncate ${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'}`}>{item.category}</p>
+                      <div className="overflow-hidden flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className={`text-[9px] font-black uppercase ${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'}`}>{item.category}</p>
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${item.stock <= 0 ? 'bg-red-500 text-white' : 'bg-green-500/20 text-green-500'}`}>
+                            Stock: {item.stock || 0}
+                          </span>
+                        </div>
                         <h4 className={`font-bold leading-tight truncate text-sm ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{item.name}</h4>
                         <div className="flex items-center gap-2">
                           <span className={`font-black text-sm ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>R$ {item.price}</span>
-                          {/* CORREÇÃO DE COR AQUI: mudado para white/40 ou black/30 para contraste */}
-                          {item.oldPrice && Number(item.oldPrice) !== Number(item.price) && (
-                            <span className={`text-[10px] line-through italic font-bold ${darkMode ? 'text-white/40' : 'text-black/30'}`}>R$ {item.oldPrice}</span>
-                          )}
                         </div>
                       </div>
                     </div>

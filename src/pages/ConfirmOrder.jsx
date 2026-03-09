@@ -1,143 +1,146 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { auth, db } from '../services/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { CheckCircle, Loader2, ShieldCheck, LogIn, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firebase';
+import { collection, addDoc, doc, updateDoc, increment, writeBatch } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, PackageCheck, MapPin, CreditCard, ArrowLeft, Loader2 } from 'lucide-react';
+import Sidebar from '../components/SideBar';
 
 export default function ConfirmOrder() {
-  const { orderId } = useParams();
+  const { user, cart, clearCart, darkMode } = useAuth();
   const navigate = useNavigate();
-  const { darkMode } = useAuth();
-  
-  const [status, setStatus] = useState('checking_auth'); 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [orderDone, setOrderDone] = useState(false);
 
-  const ADMIN_EMAIL = "admin.bakery@system.com.br"; 
+  const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  const processConfirmation = async () => {
-    setStatus('processing');
+  const handleConfirmOrder = async () => {
+    if (cart.length === 0) return;
+    setLoading(true);
+
     try {
-      const orderRef = doc(db, "orders", orderId);
-      const snap = await getDoc(orderRef);
+      
+      const batch = writeBatch(db);
 
-      if (snap.exists()) {
-        await updateDoc(orderRef, { 
-          status: "Preparando", 
-          confirmedAt: new Date()
+      const ordersRef = collection(db, "orders");
+      const orderData = {
+        userId: user.uid,
+        userName: user.displayName || "Cliente",
+        items: cart,
+        total: total,
+        status: "Pendente",
+        createdAt: new Date().toISOString()
+      };
+
+      await addDoc(ordersRef, orderData);
+
+      cart.forEach((item) => {
+        const productRef = doc(db, "products", item.id);
+       
+        batch.update(productRef, {
+          stock: increment(-item.quantity)
         });
-        setStatus('success');
-        setTimeout(() => navigate('/admin/orders'), 2000);
-      } else {
-        setStatus('error');
-      }
+      });
+
+      await batch.commit();
+      setOrderDone(true);
+      clearCart();
+      setTimeout(() => navigate('/'), 3000);
     } catch (error) {
-      console.error(error);
-      setStatus('error');
+      console.error("Erro ao finalizar pedido:", error);
+      alert("Houve um erro ao processar seu pedido. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (user && user.email === ADMIN_EMAIL) {
-      processConfirmation();
-    } else {
-      setStatus('login_required');
-    }
-  }, [orderId]);
-
-  const handleAdminLogin = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    
-    if (email !== ADMIN_EMAIL) {
-      setLoginError("Este e-mail não tem permissão de administrador.");
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      processConfirmation();
-    } catch (err) {
-      setLoginError("Senha incorreta ou erro na autenticação.");
-    }
-  };
+  if (orderDone) {
+    return (
+      <div className={`flex items-center justify-center h-screen w-full ${darkMode ? 'bg-zinc-950 text-white' : 'bg-[#f4a28c] text-[#bc232d]'}`}>
+        <div className="text-center animate-in zoom-in duration-500">
+          <CheckCircle2 size={80} className="mx-auto mb-6 text-green-500" />
+          <h2 className="text-4xl font-black uppercase tracking-tighter">Pedido Confirmado!</h2>
+          <p className="font-bold opacity-70 mt-2">Estamos preparando suas delícias...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`h-screen flex flex-col items-center justify-center p-6 text-center transition-colors duration-500 ${
-      darkMode ? 'bg-zinc-950 text-white' : 'bg-[#bc232d] text-white'
+    <div className={`flex flex-col lg:flex-row h-[100dvh] font-sans overflow-hidden transition-colors duration-500 ${
+      darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
     }`}>
       
-      {(status === 'checking_auth' || status === 'processing') && (
-        <div className="flex flex-col items-center animate-pulse">
-          <Loader2 className="animate-spin text-white mb-4" size={50} />
-          <h2 className="text-xl font-black uppercase tracking-tighter italic">Validando Credenciais...</h2>
-        </div>
-      )}
+      <Sidebar />
 
-      {status === 'login_required' && (
-        <div className={`w-full max-w-md p-10 rounded-[3.5rem] shadow-2xl border animate-in zoom-in-95 duration-500 ${
-          darkMode ? 'bg-zinc-900 border-white/10' : 'bg-white/20 border-white/30 backdrop-blur-md'
-        }`}>
-          <div className="flex justify-center mb-6">
-          
-            <ShieldCheck size={50} />
-          </div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Área do Administrador</h2>
-          <p className="text-xs font-bold opacity-70 mb-8 uppercase tracking-widest">Confirme sua identidade para preparar este pedido.</p>
-          
-          <form onSubmit={handleAdminLogin} className="flex flex-col gap-4">
-            <input 
-              type="email" 
-              placeholder="E-mail do Admin"
-              className="w-full p-4 rounded-2xl bg-white/10 border border-white/20 outline-none focus:bg-white/20 transition-all placeholder:text-white/50"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input 
-              type="password" 
-              placeholder="Senha"
-              className="w-full p-4 rounded-2xl bg-white/10 border border-white/20 outline-none focus:bg-white/20 transition-all placeholder:text-white/50"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            
-            {loginError && (
-              <div className="flex items-center gap-2 text-yellow-300 text-xs font-bold justify-center mt-2">
-                <AlertCircle size={14} /> {loginError}
+      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-y-auto order-1 lg:order-2 shadow-2xl h-full transition-colors duration-500 scrollbar-hide pb-32 lg:pb-12 ${
+        darkMode ? 'bg-zinc-900 text-white' : 'bg-[#f4a28c] text-[#bc232d]'
+      }`}>
+        
+        <div className="max-w-3xl mx-auto">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 mb-8 font-black uppercase tracking-widest text-xs opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <ArrowLeft size={18} /> Voltar ao Carrinho
+          </button>
+
+          <h2 className="text-4xl lg:text-5xl font-black mb-10 uppercase tracking-tighter flex items-center gap-4">
+            <PackageCheck size={40} /> Resumo do Pedido
+          </h2>
+
+          <div className="flex flex-col gap-6">
+            {/* Itens do Pedido */}
+            <div className={`p-8 rounded-[2.5rem] border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20'}`}>
+              <h3 className="font-black uppercase text-sm mb-6 opacity-60 tracking-widest">Produtos Selecionados</h3>
+              <div className="flex flex-col gap-4">
+                {cart.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center border-b border-black/5 pb-4">
+                    <div className="flex items-center gap-4">
+                      <span className="font-black text-lg">{item.quantity}x</span>
+                      <span className="font-bold uppercase text-sm">{item.name}</span>
+                    </div>
+                    <span className="font-black">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
               </div>
-            )}
+              <div className="flex justify-between items-center mt-8 pt-4">
+                <span className="text-2xl font-black uppercase tracking-tighter">Total</span>
+                <span className="text-3xl font-black italic">R$ {total.toFixed(2)}</span>
+              </div>
+            </div>
 
-            <button type="submit" className={`mt-4 flex items-center justify-center gap-3 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 ${
-              darkMode ? 'bg-white text-zinc-900' : 'bg-zinc-900 text-white'
-            }`}>
-              <LogIn size={20} /> Entrar e Confirmar
+            {/* Simulação de Endereço/Pagamento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`p-6 rounded-[2rem] border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20'}`}>
+                <div className="flex items-center gap-2 mb-4 opacity-60">
+                  <MapPin size={18} />
+                  <span className="font-black uppercase text-[10px] tracking-widest">Entrega</span>
+                </div>
+                <p className="font-bold text-sm uppercase">Endereço Cadastrado no Perfil</p>
+              </div>
+
+              <div className={`p-6 rounded-[2rem] border ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20'}`}>
+                <div className="flex items-center gap-2 mb-4 opacity-60">
+                  <CreditCard size={18} />
+                  <span className="font-black uppercase text-[10px] tracking-widest">Pagamento</span>
+                </div>
+                <p className="font-bold text-sm uppercase">Pagar na Entrega (Cartão/Pix)</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleConfirmOrder}
+              disabled={loading || cart.length === 0}
+              className={`w-full py-6 mt-4 rounded-[2.5rem] font-black text-xl uppercase tracking-tighter shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 ${
+                darkMode ? 'bg-white text-zinc-950' : 'bg-[#bc232d] text-white'
+              } disabled:opacity-50`}
+            >
+              {loading ? <Loader2 className="animate-spin" /> : "Confirmar e Finalizar Pedido"}
             </button>
-          </form>
+          </div>
         </div>
-      )}
-
-      {status === 'success' && (
-        <div className="animate-in fade-in duration-500">
-          <CheckCircle className="text-green-400 mb-4 mx-auto" size={60} />
-          <h2 className="text-3xl font-black uppercase tracking-tighter italic">Pedido em Preparo!</h2>
-          <p className="opacity-70 mt-2 font-bold uppercase text-xs">Redirecionando para o painel...</p>
-        </div>
-      )}
-
-      {status === 'error' && (
-        <div className="animate-in shake duration-500">
-          <AlertCircle className="text-white mb-4 mx-auto" size={60} />
-          <h2 className="text-xl font-black uppercase tracking-tighter">Pedido não encontrado ou expirado.</h2>
-          <button onClick={() => navigate('/')} className="mt-8 underline font-bold uppercase text-xs">Voltar para a Loja</button>
-        </div>
-      )}
-
+      </main>
     </div>
   );
 }

@@ -7,9 +7,34 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProductDetails from './ProductDetails';
-import Sidebar from '../components/SideBar'; // Importando a Sidebar única
+import Sidebar from '../components/SideBar';
 
-// Componente de Carregamento Global (Sincronizado com Home e Perfil)
+const Toast = ({ message, show, onClose, darkMode }) => {
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(() => onClose(), 1500); 
+      return () => clearTimeout(timer);
+    }
+  }, [show, onClose]);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed bottom-24 lg:bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border backdrop-blur-md transition-colors duration-500 ${
+        darkMode 
+        ? 'bg-zinc-800 border-white/10 text-white' 
+        : 'bg-[#bc232d] border-white/20 text-white'
+      }`}>
+        <div className="bg-white/20 p-1.5 rounded-full">
+          <UtensilsCrossed size={16} className="text-white" />
+        </div>
+        <span className="font-bold uppercase tracking-tighter text-sm">{message}</span>
+      </div>
+    </div>
+  );
+};
+
 const GlobalLoading = ({ darkMode }) => (
   <div className={`flex flex-col items-center justify-center h-[100dvh] w-full animate-in fade-in duration-500 ${darkMode ? 'bg-zinc-950 text-white' : 'bg-[#bc232d] text-white'}`}>
     <div className="animate-spin mb-4">
@@ -20,11 +45,16 @@ const GlobalLoading = ({ darkMode }) => (
 );
 
 export default function FavoritesPage() {
-  const { user, logout, darkMode } = useAuth();
+  const { user, darkMode } = useAuth();
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: "" });
+
+  const showNotification = (msg) => {
+    setToast({ show: true, message: msg });
+  };
 
   useEffect(() => {
     if (user) {
@@ -55,43 +85,49 @@ export default function FavoritesPage() {
     try {
       await deleteDoc(doc(db, "favorites", favId));
       setFavorites(favorites.filter(item => item.favId !== favId));
+      showNotification("Removido dos favoritos 💔");
     } catch (error) {
       alert("Erro ao remover dos favoritos");
     }
   };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
-  if (!user) {
-    return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center ${darkMode ? 'bg-zinc-950 text-white' : 'bg-[#f4a28c] text-[#bc232d]'}`}>
-        <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">Login Necessário</h2>
-        <button onClick={() => navigate('/login')} className={`px-8 py-3 rounded-full font-bold shadow-xl ${darkMode ? 'bg-white text-zinc-950' : 'bg-[#bc232d] text-white'}`}>FAZER LOGIN</button>
-      </div>
-    );
-  }
 
   if (loading) return <GlobalLoading darkMode={darkMode} />;
 
   return (
     <div className={`flex flex-col lg:flex-row h-[100dvh] font-sans overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'}`}>
       
+      <Toast 
+        show={toast.show} 
+        message={toast.message} 
+        onClose={() => setToast({ ...toast, show: false })} 
+        darkMode={darkMode}
+      />
+
       <Sidebar onLogoClick={() => {
         setSelectedProduct(null);
         navigate('/');
       }} />
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className={`flex-1 lg:rounded-l-[5rem] overflow-y-auto order-1 lg:order-2 shadow-2xl h-full p-6 lg:p-12 scrollbar-hide transition-colors duration-500 border-none outline-none ${
         darkMode ? 'bg-zinc-900 text-white' : 'bg-[#f4a28c] text-[#bc232d]'
       }`}>
-        {!selectedProduct ? (
+        
+        {!user ? (
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <h2 className="text-2xl lg:text-4xl font-black mb-6 uppercase tracking-tighter italic">Ops! Você precisa estar logado</h2>
+            <p className="mb-8 font-bold opacity-70 uppercase text-xs tracking-widest">Para ver seus favoritos, acesse sua conta primeiro 🧁</p>
+            <button 
+              onClick={() => navigate('/login')} 
+              className={`px-10 py-4 rounded-[2rem] font-black shadow-2xl transition-all active:scale-95 uppercase tracking-widest text-sm ${
+                darkMode ? 'bg-white text-zinc-950' : 'bg-[#bc232d] text-white'
+              }`}
+            >
+              FAZER LOGIN
+            </button>
+          </div>
+        ) : !selectedProduct ? (
           <div className="max-w-5xl mx-auto py-4">
-           {/* Favoritos */}
-            <h2 className={`text-4xl lg:text-5xl font-black mb-12 flex items-center gap-4 uppercase tracking-tighter  ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
+            <h2 className={`text-4xl lg:text-5xl font-black mb-12 flex items-center gap-4 uppercase tracking-tighter ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
               <Heart size={40} fill={darkMode ? "#fff" : "#bc232d"} /> Meus Favoritos
             </h2>
 
@@ -113,7 +149,15 @@ export default function FavoritesPage() {
                         <p className={`font-black text-lg opacity-80 leading-none ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>R${item.price}</p>
                       </div>
                       <div className="flex gap-3 mt-3">
-                        <button className={`px-5 py-2.5 rounded-2xl shadow-md hover:brightness-110 active:scale-95 transition flex-1 font-black text-xs uppercase tracking-widest ${darkMode ? 'bg-white text-zinc-950' : 'bg-[#bc232d] text-white'}`}>Pedir</button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation(); 
+                            setSelectedProduct(item); 
+                          }}
+                          className={`px-5 py-2.5 rounded-2xl shadow-md hover:brightness-110 active:scale-95 transition flex-1 font-black text-xs uppercase tracking-widest ${darkMode ? 'bg-white text-zinc-950' : 'bg-[#bc232d] text-white'}`}
+                        >
+                          Pedir
+                        </button>
                         <button onClick={(e) => removeFavorite(e, item.favId)} className={`${darkMode ? 'bg-white/10 text-white' : 'bg-white/70 text-[#bc232d]'} p-2.5 rounded-2xl shadow-sm hover:bg-red-500 hover:text-white active:scale-90 transition`}><Trash2 size={18}/></button>
                       </div>
                     </div>
@@ -123,7 +167,11 @@ export default function FavoritesPage() {
             )}
           </div>
         ) : (
-          <ProductDetails item={selectedProduct} onBack={() => setSelectedProduct(null)} />
+          <ProductDetails 
+            item={selectedProduct} 
+            onBack={() => setSelectedProduct(null)} 
+            showNotification={showNotification} 
+          />
         )}
       </main>
     </div>

@@ -69,60 +69,63 @@ const CategoryFilter = ({ categories, selected, onSelect, darkMode }) => (
   </div>
 );
 
-const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCard }) => (
-  <div 
-    onClick={() => onSelect(item)}
-    style={{ backgroundColor: bgColor }} 
-    className={`${isMenuCard ? 'w-full' : 'min-w-[75vw] sm:min-w-[280px] lg:min-w-0'} snap-center p-4 pt-14 rounded-[2.5rem] text-white relative flex flex-col h-44 shadow-xl transition-all hover:scale-105 cursor-pointer group mb-4`}
-  >
-    <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-32 h-32 flex items-center justify-center">
-      <img 
-        src={item.image} 
-        alt={item.name} 
-        className="max-w-full max-h-full object-contain drop-shadow-2xl group-hover:rotate-6 transition-transform duration-500" 
-      />
-    </div>
+const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCard }) => {
+  
+  const isOutOfStock = item.stock <= 0;
 
-    <Heart 
-      className={`absolute top-4 right-4 cursor-pointer transition-all duration-300 hover:scale-110 ${
-        isFavorite ? 'fill-white text-white' : 'text-white/80 hover:text-white'
-      }`} 
-      size={24}
-      onClick={(e) => {
-        e.stopPropagation();
-        onFavorite(item);
-      }}
-    />
-
-    <div className="flex items-center gap-1 mt-10">
-      <Star size={18} className="fill-white text-white" />
-      <span className="text-[11px] font-bold">{item.rating || "5.0"}</span>
-    </div>
-
-    {/* Padding-right maior (pr-20) para garantir que o nome nunca toque no valor */}
-    <h3 className="text-[15px] font-bold leading-tight mt-1 mb-2 truncate w-full pr-24 uppercase tracking-tighter">
-      {item.name}
-    </h3>
-
-    {/* Alinhamento dos Preços fixo no canto inferior direito */}
-    <div className="absolute bottom-4 right-4 flex flex-col items-end gap-1 min-w-[80px]">
-      <div className="bg-black/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center justify-center shadow-lg border border-white/10 w-fit">
-        <span className="text-xs font-black italic tracking-tighter whitespace-nowrap">
-          R$ {item.price}
-        </span>
+  return (
+    <div 
+      onClick={() => !isOutOfStock && onSelect(item)}
+      style={{ backgroundColor: bgColor }} 
+      className={`${isMenuCard ? 'w-full' : 'min-w-[75vw] sm:min-w-[280px] lg:min-w-0'} snap-center p-4 pt-14 rounded-[2.5rem] text-white relative flex flex-col h-44 shadow-xl transition-all group mb-4 
+      ${isOutOfStock ? 'opacity-60 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
+    >
+      <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-32 h-32 flex items-center justify-center">
+        <img 
+          src={item.image} 
+          alt={item.name} 
+          className="max-w-full max-h-full object-contain drop-shadow-2xl group-hover:rotate-6 transition-transform duration-500" 
+        />
       </div>
-      
-      {/* Reservamos o espaço mesmo que não tenha promoção para manter o padrão visual */}
-      {item.oldPrice && Number(item.oldPrice) > Number(item.price) ? (
-        <span className="text-[10px] font-bold line-through opacity-60 italic pr-2">
-          R$ {item.oldPrice}
-        </span>
-      ) : (
-        <div className="h-[15px]" /> /* Espaço vazio equivalente para não mover o card */
-      )}
+
+      <Heart 
+        className={`absolute top-4 right-4 cursor-pointer transition-all duration-300 hover:scale-110 ${
+          isFavorite ? 'fill-white text-white' : 'text-white/80 hover:text-white'
+        }`} 
+        size={24}
+        onClick={(e) => {
+          e.stopPropagation();
+          onFavorite(item);
+        }}
+      />
+
+      <div className="flex items-center gap-1 mt-10">
+        <Star size={18} className="fill-white text-white" />
+        <span className="text-[11px] font-bold">{item.rating || "5.0"}</span>
+      </div>
+
+      <h3 className="text-[15px] font-bold leading-tight mt-1 mb-2 truncate w-full pr-24 uppercase tracking-tighter">
+        {item.name}
+      </h3>
+
+      <div className="absolute bottom-4 right-4 flex flex-col items-end gap-1 min-w-[80px]">
+        <div className="bg-black/20 backdrop-blur-md px-4 py-2 rounded-full flex items-center justify-center shadow-lg border border-white/10 w-fit">
+          <span className="text-xs font-black italic tracking-tighter whitespace-nowrap">
+            R$ {item.price}
+          </span>
+        </div>
+        
+        {item.oldPrice && Number(item.oldPrice) > Number(item.price) ? (
+          <span className="text-[10px] font-bold line-through opacity-60 italic pr-2">
+            R$ {item.oldPrice}
+          </span>
+        ) : (
+          <div className="h-[15px]" />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function BakeryApp() {
   const navigate = useNavigate();
@@ -203,10 +206,13 @@ export default function BakeryApp() {
     setCurrentDate(formattedDate);
   }, []);
 
+  // Lógica de Filtro Atualizada: Remove produtos com stock <= 0
   const menuItems = popularItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "Todos" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const hasStock = item.stock > 0; // Se o stock for 0 ou menos, retorna false e some da lista
+    
+    return matchesSearch && matchesCategory && hasStock;
   });
 
   if (loading) return <GlobalLoading darkMode={darkMode} />;
@@ -290,6 +296,11 @@ export default function BakeryApp() {
                     isMenuCard={true}
                   />
                 ))}
+                {menuItems.length === 0 && (
+                  <div className="col-span-full text-center py-20 opacity-50 uppercase font-black tracking-widest text-xs">
+                    Nenhum produto disponível no momento 🧁
+                  </div>
+                )}
               </div>
             </section>
           </>

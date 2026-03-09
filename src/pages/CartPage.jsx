@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Trash2, UtensilsCrossed, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Trash2, UtensilsCrossed, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
@@ -24,7 +24,7 @@ const scrollbarHideStyle = `
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { user, cart, setCart, darkMode } = useAuth();
+  const { user, cart, setCart, darkMode, isAdmin } = useAuth(); 
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
@@ -44,6 +44,12 @@ export default function CartPage() {
     if (!user) {
       alert("Por favor, faça login para finalizar seu pedido! ✨");
       navigate('/login');
+      return;
+    }
+
+    // BLOQUEIO PARA ADMINISTRADOR
+    if (isAdmin) {
+      alert("Você é o administrador, ação desnecessária. 🛡️");
       return;
     }
 
@@ -90,13 +96,10 @@ export default function CartPage() {
       mensagem += `*Total:* R$ ${totalPedido.toFixed(2)}%0A%0A`;
       mensagem += `*AÇÃO DO VENDEDOR (CONFIRMAR):*%0A${confirmLink}`;
 
-      // Seu número de WhatsApp
       const meuNumero = "5581996306876"; 
 
-      // REDIRECIONA PARA O WHATSAPP
       window.open(`https://wa.me/${meuNumero}?text=${mensagem}`, '_blank');
       
-      // Limpa o carrinho após enviar
       setCart([]);
       
     } catch (error) {
@@ -136,6 +139,13 @@ export default function CartPage() {
               <ShoppingCart size={40} /> MEU CARRINHO
             </h2>
             
+            {isAdmin && (
+              <div className={`mb-6 p-4 rounded-2xl flex items-center gap-3 border ${darkMode ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : 'bg-orange-50/border-orange-200 text-orange-700'}`}>
+                <AlertTriangle size={20} />
+                <p className="text-xs font-bold uppercase tracking-widest">Modo Administrador: Checkout desabilitado para testes.</p>
+              </div>
+            )}
+
             {cart.length === 0 ? (
               <div className="text-center py-20 font-black opacity-60 uppercase italic">
                 Seu carrinho está vazio... por enquanto! 🍰
@@ -180,9 +190,9 @@ export default function CartPage() {
                     disabled={isSending}
                     className={`mt-6 w-full lg:w-auto px-12 py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 ${
                       darkMode ? 'bg-white text-zinc-900 hover:bg-zinc-200' : 'bg-[#bc232d] text-white hover:bg-[#a01d25]'
-                    } ${isSending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${isSending || (isAdmin && cart.length > 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                    >
-                     {isSending ? <Loader2 className="animate-spin" /> : 'Finalizar via WhatsApp'}
+                     {isSending ? <Loader2 className="animate-spin" /> : isAdmin ? 'Checkout Bloqueado' : 'Finalizar via WhatsApp'}
                    </button>
                 </div>
               </div>

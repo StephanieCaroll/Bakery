@@ -10,6 +10,7 @@ import SettingsPage from './pages/SettingsPage';
 import FormProduct from './pages/FormProduct';
 import OrdersManager from './pages/OrdersManager';
 import ConfirmOrder from './pages/ConfirmOrder';
+import CustomersManager from './pages/CustomersManager';
 
 export default function AppRoutes() {
   return (
@@ -28,6 +29,7 @@ export default function AppRoutes() {
           <Route path="/carrinho" element={<CartPage />} />
           <Route path="/favoritos" element={<FavoritesPage />} />
           <Route path="/configuracoes" element={<SettingsPage />} />
+          <Route path="/admin/customers" element={<CustomersManager />} />
           
           {/* Administração/Produtos */}
           <Route path="/form-produto" element={<FormProduct />} />

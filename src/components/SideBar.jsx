@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, User, Heart, ShoppingCart, Settings, 
-  UtensilsCrossed, LogOut, PlusCircle, ClipboardList 
+  UtensilsCrossed, LogOut, PlusCircle, ClipboardList, Users 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,15 +29,15 @@ export default function Sidebar({ onLogoClick }) {
   };
 
   return (
-    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(0.8rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-[100] transition-colors duration-500 shadow-2xl ${
+    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(0.8rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-[100] transition-colors duration-500 ${
       darkMode 
-        ? 'bg-zinc-950 shadow-black' 
-        : 'bg-[#bc232d] shadow-[#bc232d]/40' 
-    } border-r ${darkMode ? 'border-white/5' : 'border-black/5'}`}>
+        ? 'bg-zinc-950 border-r border-white/5' 
+        : 'bg-[#bc232d] ring-4 ring-[#bc232d] ring-opacity-50' 
+    }`}>
       <style>{scrollbarHideStyle}</style>
       
       <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full">
-        
+      
         <div 
           className={`hidden lg:flex p-3 rounded-full cursor-pointer transition-transform hover:scale-110 shadow-md ${
             darkMode ? 'bg-white text-zinc-950' : 'bg-white text-[#bc232d]'
@@ -78,6 +78,14 @@ export default function Sidebar({ onLogoClick }) {
               />
             )}
 
+            {isAdmin && (
+              <Users 
+                className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/admin/customers') ? 'text-green-400' : 'text-white/30 hover:text-green-400'}`} 
+                size={28} 
+                onClick={() => navigate('/admin/customers')} 
+              />
+            )}
+
             <Heart 
               className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/favoritos') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
               size={28} 
@@ -99,6 +107,7 @@ export default function Sidebar({ onLogoClick }) {
         </nav>
       </div>
 
+      {/* Seção Inferior - Desktop */}
       <div className="hidden lg:flex lg:flex-col items-center gap-10">
         <Settings 
           className={`cursor-pointer transition-colors ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
@@ -106,13 +115,6 @@ export default function Sidebar({ onLogoClick }) {
           onClick={() => navigate('/configuracoes')} 
         />
 
-        {user && (
-          <LogOut 
-            className="text-white/30 cursor-pointer hover:text-red-400 transition-colors" 
-            size={28} 
-            onClick={handleLogout} 
-          />
-        )}
       </div>
     </aside>
   );

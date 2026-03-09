@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from "../services/firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
-import { ArrowLeft, Save, Loader2, UtensilsCrossed, Trash2, Edit3, CheckCircle2, AlertCircle, Percent } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, UtensilsCrossed, Trash2, Edit3, CheckCircle2, AlertCircle, Percent, Eye, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/SideBar";
@@ -46,6 +46,7 @@ export default function FormProduto() {
   const [meusProdutos, setMeusProdutos] = useState([]);
   const [editandoId, setEditandoId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [previewItem, setPreviewItem] = useState(null);
 
   const [porcentagem, setPorcentagem] = useState('');
   const [precoFinalCalculado, setPrecoFinalCalculado] = useState(null);
@@ -141,18 +142,42 @@ export default function FormProduto() {
       <style>{scrollbarHideStyle}</style>
       <CustomToast show={toast.show} message={toast.message} type={toast.type} darkMode={darkMode} onClose={() => setToast({ ...toast, show: false })} />
       
-      {/* SIDEBAR NA ESQUERDA */}
+      {/* Modal de Pré-visualização */}
+      {previewItem && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className={`relative w-full max-w-sm rounded-[3.5rem] p-8 shadow-2xl border transition-all ${
+            darkMode ? 'bg-zinc-900 border-white/10' : 'bg-[#f4a28c] border-white/20'
+          }`}>
+            <button onClick={() => setPreviewItem(null)} className={`absolute right-6 top-6 opacity-40 hover:opacity-100 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
+              <X size={24} />
+            </button>
+            <div className="flex flex-col items-center text-center">
+              <img src={previewItem.image} alt={previewItem.name} className="w-40 h-40 object-contain drop-shadow-2xl mb-6 hover:scale-105 transition-transform" />
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-2 opacity-60 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{previewItem.category}</p>
+              <h3 className={`text-2xl font-black uppercase tracking-tighter mb-4 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{previewItem.name}</h3>
+              <div className="flex items-center gap-3 mb-6">
+                <span className={`text-3xl font-black italic ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>R$ {previewItem.price}</span>
+                {previewItem.oldPrice && Number(previewItem.oldPrice) > Number(previewItem.price) && (
+                  <span className={`text-sm line-through italic font-bold ${darkMode ? 'text-white/40' : 'text-black/30'}`}>R$ {previewItem.oldPrice}</span>
+                )}
+              </div>
+              <p className={`text-xs font-bold uppercase opacity-70 leading-relaxed ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{previewItem.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Sidebar onLogoClick={() => navigate('/')} />
 
-      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 overflow-hidden order-1 lg:order-2 shadow-2xl h-full transition-colors duration-500 border-none outline-none scrollbar-hide ${
+      <main className={`flex-1 lg:rounded-l-[5rem] p-6 lg:p-12 order-1 lg:order-2 shadow-2xl h-full transition-colors duration-500 border-none outline-none overflow-y-auto lg:overflow-hidden scrollbar-hide pb-32 lg:pb-12 ${
         darkMode ? 'bg-zinc-900' : 'bg-[#f4a28c]'
       }`}>
         
         <div className="max-w-6xl mx-auto h-full flex flex-col py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 h-full overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:h-full lg:overflow-hidden">
             
             {/* Formulário */}
-            <div className={`flex flex-col h-fit ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/20'} backdrop-blur-md p-8 rounded-[3rem] `}>
+            <div className={`flex flex-col h-fit ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/30 border-white/20'} backdrop-blur-md p-8 rounded-[3rem]`}>
               <div className="flex items-center gap-4 mb-6">
                 <div className={`p-3 rounded-2xl ${darkMode ? 'bg-white text-zinc-900' : 'bg-[#bc232d] text-white'}`}>
                   <UtensilsCrossed size={32} />
@@ -210,31 +235,41 @@ export default function FormProduto() {
             </div>
 
             {/* Lista de Itens */}
-            <div className="flex flex-col h-full lg:overflow-hidden pb-10 lg:pb-0">
+            <div className="flex flex-col lg:h-full lg:overflow-hidden pb-10 lg:pb-0">
               <h3 className={`text-xl font-black uppercase tracking-widest opacity-50 mb-6 ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>
                 Itens ({meusProdutos.length})
               </h3>
               
-              <div className="flex-1 space-y-4 lg:overflow-y-auto pr-2 scrollbar-hide pb-20">
+              <div className="flex-1 space-y-4 lg:overflow-y-auto pr-2 scrollbar-hide">
                 {meusProdutos.map(item => (
-                  <div key={item.id} className={`flex items-center justify-between p-4 rounded-[2rem] border transition-all ${
+                  <div key={item.id} className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-[2rem] border transition-all gap-4 ${
                     darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-white/20 shadow-md'
                   }`}>
-                    <div className="flex items-center gap-4">
-                      <img src={item.image} alt="" className="w-16 h-16 rounded-2xl object-cover shadow-lg" />
-                      <div>
-                        <p className={`text-[10px] font-black uppercase ${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'}`}>{item.category}</p>
-                        <h4 className={`font-bold leading-tight truncate ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{item.name}</h4>
+                    <div className="flex items-center gap-4 w-full overflow-hidden">
+                      <img src={item.image} alt="" className="w-14 h-14 min-w-[56px] rounded-2xl object-cover shadow-lg" />
+                      <div className="overflow-hidden">
+                        <p className={`text-[9px] font-black uppercase truncate ${darkMode ? 'text-white/40' : 'text-[#bc232d]/60'}`}>{item.category}</p>
+                        <h4 className={`font-bold leading-tight truncate text-sm ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>{item.name}</h4>
                         <div className="flex items-center gap-2">
                           <span className={`font-black text-sm ${darkMode ? 'text-white' : 'text-[#bc232d]'}`}>R$ {item.price}</span>
-                          {item.oldPrice && item.oldPrice !== item.price && <span className="text-[10px] line-through opacity-40 italic font-bold">R$ {item.oldPrice}</span>}
+                          {/* CORREÇÃO DE COR AQUI: mudado para white/40 ou black/30 para contraste */}
+                          {item.oldPrice && Number(item.oldPrice) !== Number(item.price) && (
+                            <span className={`text-[10px] line-through italic font-bold ${darkMode ? 'text-white/40' : 'text-black/30'}`}>R$ {item.oldPrice}</span>
+                          )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <button onClick={() => prepararEdicao(item)} className="p-3 bg-white/20 rounded-xl hover:bg-orange-500 hover:text-white transition-all"><Edit3 size={18} /></button>
-                      <button onClick={() => deletarProduto(item.id)} className="p-3 bg-white/20 rounded-xl hover:bg-red-600 hover:text-white transition-all text-red-500"><Trash2 size={18} /></button>
+                    <div className="flex gap-2 w-full sm:w-auto justify-end">
+                      <button onClick={() => setPreviewItem(item)} className={`p-2.5 rounded-xl transition-all ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-zinc-100 hover:bg-zinc-200 text-[#bc232d]'}`}>
+                        <Eye size={18} />
+                      </button>
+                      <button onClick={() => prepararEdicao(item)} className="p-2.5 bg-orange-500/10 text-orange-500 rounded-xl hover:bg-orange-500 hover:text-white transition-all">
+                        <Edit3 size={18} />
+                      </button>
+                      <button onClick={() => deletarProduto(item.id)} className="p-2.5 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all">
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
                 ))}

@@ -29,14 +29,13 @@ export default function Sidebar({ onLogoClick }) {
   };
 
   return (
-    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-50 transition-colors duration-500 shadow-2xl ${
+    <aside className={`w-full lg:w-24 h-auto lg:h-full flex lg:flex-col items-center pt-4 pb-[calc(0.8rem+env(safe-area-inset-bottom,1.5rem))] lg:py-12 justify-between order-2 lg:order-1 z-[100] transition-colors duration-500 shadow-2xl ${
       darkMode ? 'bg-zinc-950' : 'bg-[#bc232d]'
     }`}>
       <style>{scrollbarHideStyle}</style>
       
       <div className="flex lg:flex-col items-center gap-6 lg:gap-14 w-full">
         
-        {/* Logo */}
         <div 
           className={`hidden lg:flex p-3 rounded-full cursor-pointer transition-transform hover:scale-110 shadow-md ${
             darkMode ? 'bg-white text-zinc-950' : 'bg-white text-[#bc232d]'
@@ -46,57 +45,59 @@ export default function Sidebar({ onLogoClick }) {
           <UtensilsCrossed size={32} />
         </div>
 
-        {/* Navegação Principal */}
-        <nav className="flex lg:flex-col gap-8 lg:gap-10 w-full px-6 lg:px-0 justify-start lg:items-center overflow-x-auto lg:overflow-x-visible hide-scrollbar snap-x">
-          <Home 
-            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
-            size={28} 
-            onClick={handleLogoAction} 
-          />
+        <nav className="flex lg:flex-col gap-8 lg:gap-10 w-full px-10 lg:px-0 justify-start lg:items-center overflow-x-auto lg:overflow-x-visible hide-scrollbar snap-x">
           
-          <User 
-            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/perfil') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
-            size={28} 
-            onClick={() => navigate('/perfil')} 
-          />
-          
-          {isAdmin && (
-            <PlusCircle 
-              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/form-produto') ? 'text-yellow-400' : 'text-white/30 hover:text-yellow-400'}`} 
+          <div className="flex lg:flex-col gap-8 lg:gap-10 mx-auto lg:mx-0 items-center">
+            <Home 
+              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
               size={28} 
-              onClick={() => navigate('/form-produto')} 
+              onClick={handleLogoAction} 
             />
-          )}
-
-          {isAdmin && (
-            <ClipboardList 
-              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/admin/orders') ? 'text-blue-400' : 'text-white/30 hover:text-blue-400'}`} 
+            
+            <User 
+              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/perfil') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
               size={28} 
-              onClick={() => navigate('/admin/orders')} 
+              onClick={() => navigate('/perfil')} 
             />
-          )}
+            
+            {isAdmin && (
+              <PlusCircle 
+                className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/form-produto') ? 'text-yellow-400' : 'text-white/30 hover:text-yellow-400'}`} 
+                size={28} 
+                onClick={() => navigate('/form-produto')} 
+              />
+            )}
 
-          <Heart 
-            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/favoritos') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
-            size={28} 
-            onClick={() => navigate('/favoritos')} 
-          />
-          
-          <ShoppingCart 
-            className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/carrinho') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
-            size={28} 
-            onClick={() => navigate('/carrinho')} 
-          />
+            {isAdmin && (
+              <ClipboardList 
+                className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/admin/orders') ? 'text-blue-400' : 'text-white/30 hover:text-blue-400'}`} 
+                size={28} 
+                onClick={() => navigate('/admin/orders')} 
+              />
+            )}
 
-          <Settings 
-            className={`lg:hidden cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
-            size={28} 
-            onClick={() => navigate('/configuracoes')} 
-          />
+            <Heart 
+              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/favoritos') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+              size={28} 
+              onClick={() => navigate('/favoritos')} 
+            />
+            
+            <ShoppingCart 
+              className={`cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/carrinho') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+              size={28} 
+              onClick={() => navigate('/carrinho')} 
+            />
+
+            <Settings 
+              className={`lg:hidden cursor-pointer min-w-[28px] transition-colors snap-center ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 
+              size={28} 
+              onClick={() => navigate('/configuracoes')} 
+            />
+          </div>
         </nav>
       </div>
 
-      {/* Seção Inferior */}
+      {/* Seção Inferior - Desktop */}
       <div className="hidden lg:flex lg:flex-col items-center gap-10">
         <Settings 
           className={`cursor-pointer transition-colors ${isActive('/configuracoes') ? 'text-white' : 'text-white/30 hover:text-white'}`} 

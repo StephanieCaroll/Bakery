@@ -39,7 +39,7 @@ export default function CartPage() {
 
   const totalPedido = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  // FUNÇÃO DE AUTOMAÇÃO E CHECKOUT ATUALIZADA
+  // FUNÇÃO DE AUTOMAÇÃO E CHECKOUT 
   const handleCheckout = async () => {
     if (!user) {
       alert("Por favor, faça login para finalizar seu pedido! ✨");
@@ -79,11 +79,9 @@ export default function CartPage() {
 
       const docRef = await addDoc(collection(db, "orders"), orderData);
       const orderId = docRef.id;
-
-      // GERA O LINK DE CONFIRMAÇÃO
       const confirmLink = `https://${window.location.host}/confirmar-pedido/${orderId}`;
 
-      // MONTA A MENSAGEM DO WHATSAPP (AGORA COM NOME E E-MAIL SEPARADOS)
+      // MENSAGEM DO WHATSAPP 
       let mensagem = `*🧁 NOVO PEDIDO - BAKERY*%0A%0A`;
       mensagem += `*Cliente:* ${userData.name}%0A`;
       mensagem += `*E-mail:* ${user.email}%0A`;
@@ -92,7 +90,7 @@ export default function CartPage() {
       mensagem += `*Total:* R$ ${totalPedido.toFixed(2)}%0A%0A`;
       mensagem += `*AÇÃO DO VENDEDOR (CONFIRMAR):*%0A${confirmLink}`;
 
-      // Seu número de WhatsApp(Onde você recebe os pedidos)
+      // Seu número de WhatsApp
       const meuNumero = "5581996306876"; 
 
       // REDIRECIONA PARA O WHATSAPP

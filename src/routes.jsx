@@ -11,6 +11,7 @@ import FormProduct from './pages/FormProduct';
 import OrdersManager from './pages/OrdersManager';
 import ConfirmOrder from './pages/ConfirmOrder';
 import CustomersManager from './pages/CustomersManager';
+import BannerManager from './pages/BannerManager';
 
 export default function AppRoutes() {
   return (
@@ -35,6 +36,7 @@ export default function AppRoutes() {
           <Route path="/form-produto" element={<FormProduct />} />
           <Route path="/admin/orders" element={<OrdersManager />} />
           <Route path="/confirmar-pedido/:orderId" element={<ConfirmOrder />} />
+          <Route path="/admin/banner" element={<BannerManager />} />
           
         </Routes>
       </BrowserRouter>

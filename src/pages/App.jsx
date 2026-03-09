@@ -3,7 +3,7 @@ import {
   Search, UtensilsCrossed, Heart, Star 
 } from 'lucide-react';
 import { db } from '../services/firebase'; 
-import { collection, getDocs, query, where, deleteDoc, doc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, deleteDoc, doc, addDoc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProductDetails from './ProductDetails';
@@ -70,7 +70,6 @@ const CategoryFilter = ({ categories, selected, onSelect, darkMode }) => (
 );
 
 const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCard }) => {
-  
   const isOutOfStock = item.stock <= 0;
 
   return (
@@ -81,11 +80,14 @@ const ProductCard = ({ item, onSelect, bgColor, onFavorite, isFavorite, isMenuCa
       ${isOutOfStock ? 'opacity-60 grayscale cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
     >
       <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-32 h-32 flex items-center justify-center">
-        <img 
-          src={item.image} 
-          alt={item.name} 
-          className="max-w-full max-h-full object-contain drop-shadow-2xl group-hover:rotate-6 transition-transform duration-500" 
-        />
+       
+        {item.image ? (
+          <img 
+            src={item.image} 
+            alt={item.name} 
+            className="max-w-full max-h-full object-contain drop-shadow-2xl group-hover:rotate-6 transition-transform duration-500" 
+          />
+        ) : null}
       </div>
 
       <Heart 
@@ -139,6 +141,12 @@ export default function BakeryApp() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ show: false, message: "" });
 
+  const [bannerData, setBannerData] = useState({
+    title: 'A Arte de Assar Memórias',
+    subtitle: 'Bolos artesanais para momentos inesquecíveis.',
+    imageUrl: null 
+  });
+
   const categories = ["Todos", "Bolos", "Doces", "Pães", "Salgados", "Bebidas"];
 
   const showNotification = (msg) => {
@@ -186,17 +194,24 @@ export default function BakeryApp() {
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        const productsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const productsSnapshot = await getDocs(collection(db, "products"));
+        const productsList = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPopularItems(productsList);
+
+        const bannerSnap = await getDoc(doc(db, "settings", "mainBanner"));
+        if (bannerSnap.exists()) {
+          setBannerData(bannerSnap.data());
+        }
+
         setTimeout(() => setLoading(false), 400);
       } catch (error) { 
+        console.error(error);
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
     fetchFavorites();
   }, [user]);
 
@@ -206,11 +221,10 @@ export default function BakeryApp() {
     setCurrentDate(formattedDate);
   }, []);
 
-  // Lógica de Filtro Atualizada: Remove produtos com stock <= 0
   const menuItems = popularItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "Todos" || item.category === selectedCategory;
-    const hasStock = item.stock > 0; // Se o stock for 0 ou menos, retorna false e some da lista
+    const hasStock = item.stock > 0;
     
     return matchesSearch && matchesCategory && hasStock;
   });
@@ -259,13 +273,24 @@ export default function BakeryApp() {
               </div>
             </header>
 
-            <section className={`${darkMode ? 'bg-zinc-800' : 'bg-[#e44444]'} rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 shadow-xl`}>
+            <section className={`${darkMode ? 'bg-zinc-800' : 'bg-[#e44444]'} rounded-[2rem] lg:rounded-full p-8 flex items-center relative mb-12 lg:mb-16 lg:h-48 shadow-xl overflow-hidden`}>
                 <div className="hidden lg:block absolute -left-10 -top-8">
-                  <img src="https://static.vecteezy.com/system/resources/thumbnails/047/814/133/small_2x/a-slice-of-strawberry-cake-with-strawberries-on-top-the-cake-is-cut-in-half-and-has-a-strawberry-on-each-half-isolated-on-a-transparent-background-png.png" alt="Bolo" className="w-72 h-60 object-contain drop-shadow-2xl" />
+                 
+                  {bannerData.imageUrl ? (
+                    <img 
+                      src={bannerData.imageUrl} 
+                      alt="Destaque" 
+                      className="w-72 h-60 object-contain drop-shadow-2xl animate-in slide-in-from-left-10 duration-1000" 
+                    />
+                  ) : null}
                 </div>
                 <div className="lg:ml-64 text-white text-center lg:text-left w-full">
-                  <h1 className="text-2xl lg:text-4xl font-black uppercase leading-none mb-3 tracking-tighter">A Arte de Assar Memórias</h1>
-                  <p className="text-xs lg:text-sm font-medium opacity-80 uppercase tracking-widest">Bolos artesanais para momentos inesquecíveis.</p>
+                  <h1 className="text-2xl lg:text-4xl font-black uppercase leading-none mb-3 tracking-tighter">
+                    {bannerData.title}
+                  </h1>
+                  <p className="text-xs lg:text-sm font-medium opacity-80 uppercase tracking-widest">
+                    {bannerData.subtitle}
+                  </p>
                 </div>
             </section>
 

@@ -6,7 +6,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/StephanieCaroll/bakery?style=for-the-badge)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/StephanieCaroll/bakery?style=for-the-badge)
 
-<img src="./assets/image.png" width="1200" alt="bakery">
+<img src="./src/assets/image.png" width="1200" alt="bakery">
 
 > O **Bakery** é uma plataforma de e-commerce para padarias e confeitarias, desenvolvida com React e Firebase, focada em oferecer uma experiência de compra deliciosa e intuitiva.
 
